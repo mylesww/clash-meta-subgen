@@ -19,7 +19,7 @@
 - `extra.yaml`
   定义 Clash Meta 顶层字段，例如 `port`、`dns`、`tun`、`sniffer`。
 
-参考文件：
+### 配置参考文件：
 
 - 配置示例：[config.example.yaml](./config.example.yaml)
 - 字段说明：[config.fields.md](./config.fields.md)
@@ -40,10 +40,7 @@
 
 3. 部署完成后，默认会得到一个 `workers.dev` 地址
 
-4. 准备两个可通过 `https://` 访问的远程 YAML
-
-- 一个 `config.yaml`
-- 一个 `extra.yaml`
+4. 准备自己的`config.yaml`与`extra.yaml`文件, 需要能通过URL直接下载，可直接参考上面的[配置参考文件](#配置参考文件)
 
 5. 通过网页生成链接
 

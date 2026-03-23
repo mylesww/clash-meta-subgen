@@ -1,0 +1,20 @@
+{
+  "name": "clash-meta-subgen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "vitest": "^2.1.8",
+    "wrangler": "^4.33.2"
+  }
+}

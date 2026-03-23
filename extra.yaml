@@ -1,0 +1,64 @@
+port: 37890
+socks-port: 37891
+allow-lan: true
+mode: Rule
+log-level: info
+external-controller: :19990
+tcp-concurrent: true
+global-client-fingerprint: chrome
+geodata-loader: standard
+dns:
+  enable: true
+  ipv6: true
+  listen: 127.0.0.1:1053
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - localhost.ptlogin2.qq.com
+    - +.windows.com
+    - +.windowsupdate.com
+    - +.msftconnecttest.com
+    - +.msftncsi.com
+    - +.nist.gov
+    - +.mi.com
+    - +.xiaomi.com
+    - +.xiaomi.cn
+    - +.xiaomi.net
+    - +.xiaomiyoupin.com
+    - +.mijia.tech
+    - +.miot-spec.org
+    - +.mi-img.com
+    - +.miui.com
+  use-hosts: true
+  nameserver-policy:
+    geosite:cn: https://dns.alidns.com/dns-query
+    +.example.com: https://doh.pub/dns-query
+    +.gstatic.com: https://doh.pub/dns-query
+  nameserver: [223.5.5.5, 119.29.29.29]
+  default-nameserver: [114.114.115.115]
+  fallback: [tls://8.8.4.4:853, tls://1.1.1.1:853]
+  fallback-filter: {geoip: true, geoip-code: CN, ipcidr: [240.0.0.0/4, 0.0.0.0/32]}
+tun:
+  enable: true
+  stack: system
+  auto-detect-interface: true
+  auto-route: true
+  dns-hijack:
+    - any:53
+sniffer:
+  enable: true
+  override-destination: false
+  force-dns-mapping: true
+  parse-pure-ip: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+    HTTP:
+      ports: [80, 8080-8880]
+    QUIC:
+      ports: [443, 8443]
+  force-domain:
+    - +.v2ex.com
+  skip-domain:
+    - Mijia Cloud

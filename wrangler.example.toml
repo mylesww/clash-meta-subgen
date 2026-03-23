@@ -1,0 +1,12 @@
+name = "clash-meta-subgen"
+main = "src/index.ts"
+compatibility_date = "2026-03-20"
+
+[assets]
+directory = "./public"
+not_found_handling = "404-page"
+run_worker_first = ["/sub"]
+
+[[routes]]
+pattern = "your-domain.example"
+custom_domain = true

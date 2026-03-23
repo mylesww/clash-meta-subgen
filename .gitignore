@@ -1,0 +1,31 @@
+node_modules/
+.wrangler/
+wrangler.toml
+dist/
+coverage/
+
+# Local env and secrets
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+*.local
+*.local.*
+*.secret
+*.secret.*
+token*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Local/private config files
+clash.yaml
+*.local.yaml
+*.local.ini
+config*.copy.yaml
+
+# OS / editor noise
+.DS_Store

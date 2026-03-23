@@ -1,0 +1,6 @@
+prepend: []
+append:
+  - 'AND,((NETWORK,UDP),(DST-PORT,443)),REJECT'
+  - 'MATCH,🐟 漏网之鱼'
+delete:
+  - 'MATCH,🐟 漏网之鱼'

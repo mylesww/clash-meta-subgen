@@ -1,0 +1,746 @@
+# 订阅源列表。每个订阅源最终会被拉取并参与后续的节点分组。
+subs:
+  - url: "https://subscribe.example.com/api/v1/client/subscribe?token=YOUR_SUB_TOKEN"
+    tag: provider-a
+  - url: "https://assets.example.com/subs/provider-b.yaml"
+    tag: provider-b
+
+# 可选：对所有订阅源统一应用的节点名排除正则。
+# 命中后会在导入阶段直接丢弃，发生在重命名前。
+exclude: "(试用|过期|到期|剩余流量|重置|官网)"
+
+# 规则来源列表。每一项都表示“哪些规则命中后走哪个策略组”。
+ruleSets:
+  - policy: 🚀 节点选择
+    source:
+      type: remote
+      url: "https://assets.example.com/rules/proxy.list"
+  - policy: 🤷‍♂️ 特殊端口
+    source:
+      type: remote
+      url: "https://assets.example.com/rules/port.list"
+  - policy: 🎯 全球直连
+    source:
+      type: remote
+      url: "https://assets.example.com/rules/direct.list"
+  - policy: 🛑 广告拦截
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list"
+  - policy: 🛑 广告拦截
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanProgramAD.list"
+  - policy: 💬 AI
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/AI.list"
+  - policy: 💬 AI
+    source:
+      type: remote
+      url: "https://assets.example.com/rules/ai.list"
+  - policy: 🎯 全球直连
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Lan/Lan.list"
+  - policy: 🎯 全球直连
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Direct/Direct.list"
+  - policy: 🇬 谷歌服务
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/GoogleFCM/GoogleFCM.list"
+  - policy: 🎯 全球直连
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/GoogleCN.list"
+  - policy: 🇬 谷歌服务
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleCNProxyIP.list"
+  - policy: 🎮 SteamCN
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/SteamCN/SteamCN.list"
+  - policy: 🎮 SteamCN
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/Aethersailor/Custom_OpenClash_Rules/main/rule/Steam_CDN.list"
+  - policy: 🎯 全球直连
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/PrivateTracker/PrivateTracker.list"
+  - policy: 🚀 GitHub
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/GitHub/GitHub.list"
+  - policy: 🍎 苹果服务
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Apple/Apple.list"
+  - policy: Ⓜ️ 微软云盘
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OneDrive/OneDrive.list"
+  - policy: Ⓜ️ 微软服务
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Microsoft/Microsoft.list"
+  - policy: 📹 YouTube
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/YouTube/YouTube.list"
+  - policy: 🇬 谷歌服务
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Google/Google.list"
+  - policy: 🎯 全球直连
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/XiaoMi/XiaoMi.list"
+  - policy: 🎥 奈飞视频
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Netflix/Netflix.list"
+  - policy: 📺 哔哩哔哩
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/BilibiliHMT.list"
+  - policy: 🎶 网易音乐
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/NetEaseMusic/NetEaseMusic.list"
+  - policy: 🌏 国内媒体
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/ChinaMedia/ChinaMedia.list"
+  - policy: 🎮 游戏平台
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Epic/Epic.list"
+  - policy: 🎮 游戏平台
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/EA/EA.list"
+  - policy: 🎮 游戏平台
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Blizzard/Blizzard.list"
+  - policy: 🎮 游戏平台
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/UBI/UBI.list"
+  - policy: 🎮 游戏平台
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Sony/Sony.list"
+  - policy: 🎮 游戏平台
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Nintendo/Nintendo.list"
+  - policy: 🎮 游戏下载
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Game/GameDownload/GameDownload.list"
+  - policy: 🎮 Steam
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Steam/Steam.list"
+  - policy: 🌐 国外媒体
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/GlobalMedia/GlobalMedia.list"
+  - policy: 🌚 国外站点
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Telegram/Telegram.list"
+  - policy: 🌚 国外站点
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Twitter/Twitter.list"
+  - policy: 🌚 国外站点
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyGFWlist.list"
+  - policy: 🇨🇳 国内站点
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaDomain.list"
+  - policy: 🇨🇳 国内站点
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/China/China.list"
+  - policy: 🇨🇳 国内站点
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/ChinaIPs/ChinaIPs.list"
+  - policy: 🎯 全球直连
+    source:
+      type: remote
+      url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Download/Download.list"
+  - policy: 🎯 全球直连
+    source:
+      type: geosite
+      value: category-public-tracker
+  - policy: 🎯 全球直连
+    source:
+      type: geoip
+      value: LAN
+      noResolve: true
+  - policy: 🎯 全球直连
+    source:
+      type: geoip
+      value: CN
+      noResolve: true
+  - policy: 🐟 漏网之鱼
+    source:
+      type: final
+
+# 策略组列表。`type` 决定组的工作方式，`members` 只描述成员来源，二者不做绑定。
+proxyGroups:
+  - name: 🚀 节点选择
+    type: select
+    members:
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: ✅ 家宽节点
+      - type: group
+        name: 🚀 手动切换
+      - type: builtin
+        name: DIRECT
+  - name: 🐟 漏网之鱼
+    type: select
+    members:
+      - type: group
+        name: 🚀 节点选择
+      - type: builtin
+        name: DIRECT
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+  - name: 🇭🇰 香港节点
+    type: url-test
+    test:
+      url: "http://www.gstatic.com/generate_204"
+      interval: 120
+      tolerance: 20
+    members:
+      - type: nodeMatch
+        pattern: "(港|HK|Hong Kong)"
+  - name: 🧠 sider域名
+    type: select
+    members:
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+      - type: builtin
+        name: DIRECT
+  - name: 💬 AI
+    type: select
+    members:
+      - type: group
+        name: ✅ 家宽节点
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: builtin
+        name: DIRECT
+  - name: 📹 YouTube
+    type: select
+    members:
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+      - type: builtin
+        name: DIRECT
+  - name: 🇬 谷歌服务
+    type: select
+    members:
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+      - type: builtin
+        name: DIRECT
+  - name: Ⓜ️ 微软云盘
+    type: select
+    members:
+      - type: builtin
+        name: DIRECT
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+  - name: Ⓜ️ 微软服务
+    type: select
+    members:
+      - type: builtin
+        name: DIRECT
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+  - name: 🚀 GitHub
+    type: select
+    members:
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+      - type: builtin
+        name: DIRECT
+  - name: 🎮 SteamCN
+    type: select
+    members:
+      - type: builtin
+        name: DIRECT
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+  - name: 🎮 Steam
+    type: select
+    members:
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+      - type: builtin
+        name: DIRECT
+  - name: 🎮 游戏平台
+    type: select
+    members:
+      - type: builtin
+        name: DIRECT
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+  - name: 🎮 游戏下载
+    type: select
+    members:
+      - type: builtin
+        name: DIRECT
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+  - name: 🌐 国外媒体
+    type: select
+    members:
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+      - type: builtin
+        name: DIRECT
+  - name: 🌏 国内媒体
+    type: select
+    members:
+      - type: builtin
+        name: DIRECT
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🚀 手动切换
+  - name: 🎥 奈飞视频
+    type: select
+    members:
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+      - type: builtin
+        name: DIRECT
+  - name: 📺 哔哩哔哩
+    type: select
+    members:
+      - type: group
+        name: 🎯 全球直连
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇭🇰 香港节点
+  - name: 🎶 网易音乐
+    type: select
+    members:
+      - type: builtin
+        name: DIRECT
+      - type: group
+        name: 🚀 节点选择
+      - type: nodeMatch
+        pattern: "(网易|音乐|解锁|Music|NetEase)"
+  - name: 🍎 苹果服务
+    type: select
+    members:
+      - type: builtin
+        name: DIRECT
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+  - name: 🎯 全球直连
+    type: select
+    members:
+      - type: builtin
+        name: DIRECT
+      - type: group
+        name: 🚀 节点选择
+  - name: 🛑 广告拦截
+    type: select
+    members:
+      - type: builtin
+        name: REJECT
+      - type: builtin
+        name: DIRECT
+  - name: 🇨🇳 国内站点
+    type: select
+    members:
+      - type: builtin
+        name: DIRECT
+      - type: group
+        name: 🚀 节点选择
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+  - name: 🌚 国外站点
+    type: select
+    members:
+      - type: group
+        name: 🚀 节点选择
+      - type: builtin
+        name: DIRECT
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: group
+        name: ✅ 家宽节点
+  - name: 🇯🇵 日本节点
+    type: url-test
+    test:
+      url: "http://www.gstatic.com/generate_204"
+      interval: 120
+      tolerance: 20
+    members:
+      - type: nodeMatch
+        pattern: "(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan)"
+  - name: 🇺🇲 美国节点
+    type: url-test
+    test:
+      url: "http://www.gstatic.com/generate_204"
+      interval: 120
+      tolerance: 40
+    members:
+      - type: nodeMatch
+        pattern: "(美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States)"
+  - name: 🇨🇳 台湾节点
+    type: url-test
+    test:
+      url: "http://www.gstatic.com/generate_204"
+      interval: 120
+      tolerance: 20
+    members:
+      - type: nodeMatch
+        pattern: "(台|新北|彰化|TW|Taiwan)"
+  - name: 🇸🇬 狮城节点
+    type: url-test
+    test:
+      url: "http://www.gstatic.com/generate_204"
+      interval: 120
+      tolerance: 20
+    members:
+      - type: nodeMatch
+        pattern: "(新加坡|坡|狮城|SG|Singapore)"
+  - name: 🇰🇷 韩国节点
+    type: url-test
+    test:
+      url: "http://www.gstatic.com/generate_204"
+      interval: 120
+      tolerance: 20
+    members:
+      - type: nodeMatch
+        pattern: "(KR|Korea|KOR|首尔|韩|韓)"
+  - name: ✅ 家宽节点
+    type: select
+    members:
+      - type: nodeMatch
+        pattern: ".*(家宽|无线|住宅)"
+  - name: 🤷‍♂️ 特殊端口
+    type: select
+    members:
+      - type: builtin
+        name: DIRECT
+      - type: group
+        name: 🚀 节点选择
+  - name: 🚀 手动切换
+    type: select
+    members:
+      - type: nodeMatch
+        pattern: ".*"
+  - name: ✅ 家宽前置
+    type: select
+    members:
+      - type: group
+        name: 🇭🇰 香港节点
+      - type: group
+        name: 🇨🇳 台湾节点
+      - type: group
+        name: 🇸🇬 狮城节点
+      - type: group
+        name: 🇯🇵 日本节点
+      - type: group
+        name: 🇺🇲 美国节点
+      - type: group
+        name: 🇰🇷 韩国节点
+      - type: group
+        name: 🚀 手动切换
+      - type: builtin
+        name: DIRECT

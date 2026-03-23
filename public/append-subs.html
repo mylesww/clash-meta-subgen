@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>额外订阅拼接</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f1e8;
+        --card: #fffdf8;
+        --ink: #1e2a21;
+        --muted: #5b675f;
+        --line: #d4d0c6;
+        --accent: #0e6b50;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(14, 107, 80, 0.12), transparent 30%),
+          linear-gradient(180deg, #f7f4ec 0%, var(--bg) 100%);
+        color: var(--ink);
+      }
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 48px 20px 72px;
+      }
+      .card {
+        position: relative;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 72px 28px 28px;
+        box-shadow: 0 20px 50px rgba(24, 34, 28, 0.08);
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(32px, 6vw, 52px);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+      }
+      p {
+        margin: 0 0 24px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      form {
+        display: grid;
+        gap: 16px;
+      }
+      label {
+        display: grid;
+        gap: 8px;
+        font-weight: 600;
+      }
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px 16px;
+        font: inherit;
+        color: inherit;
+        background: #ffffff;
+      }
+      textarea {
+        min-height: 128px;
+        resize: vertical;
+      }
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 14px 18px;
+        font: inherit;
+        font-weight: 700;
+        color: white;
+        background: var(--accent);
+        cursor: pointer;
+      }
+      output {
+        display: block;
+        margin-top: 20px;
+        padding: 16px;
+        border-radius: 16px;
+        background: #eef6f1;
+        border: 1px solid #c7dfd5;
+        overflow-wrap: anywhere;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 13px;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 14px;
+      }
+      .actions[hidden] {
+        display: none;
+      }
+      .ghost {
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--line);
+      }
+      .tips {
+        margin-top: 22px;
+        padding-top: 18px;
+        border-top: 1px dashed var(--line);
+        display: grid;
+        gap: 8px;
+        color: var(--muted);
+      }
+      .link {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .corner-link {
+        position: absolute;
+        top: 24px;
+        left: 28px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="card">
+        <a class="link corner-link" href="/">返回首页</a>
+        <h1>额外订阅拼接</h1>
+        <p>把原来的生成链接贴进来，再填写额外订阅链接，就能重新拼出带 `subs` 的新链接。</p>
+        <form id="builder">
+          <label>
+            原生成链接
+            <input
+              id="baseLink"
+              name="baseLink"
+              type="url"
+              required
+              placeholder="https://example.com/sub?config=...&extra=...&token=..."
+            />
+          </label>
+          <label>
+            额外订阅链接
+            <textarea
+              id="subs"
+              name="subs"
+              placeholder="每行一个额外订阅 URL&#10;https://example.com/sub-a&#10;https://example.com/sub-b"
+            ></textarea>
+          </label>
+          <button type="submit">生成新链接</button>
+        </form>
+        <output id="result" hidden><code></code></output>
+        <div id="actions" class="actions" hidden>
+          <button id="copyLink" type="button" class="ghost">复制链接</button>
+          <button id="openLink" type="button">打开链接</button>
+        </div>
+        <div class="tips">
+          <div>会保留原链接里的 `config`、`extra`、`token`，然后重写 `subs` 参数。</div>
+        </div>
+      </section>
+    </main>
+    <script>
+      const form = document.getElementById("builder");
+      const output = document.getElementById("result");
+      const code = output.querySelector("code");
+      const actions = document.getElementById("actions");
+      const copyLinkButton = document.getElementById("copyLink");
+      const openLinkButton = document.getElementById("openLink");
+      const currentUrl = new URL(window.location.href);
+      const baseLinkInput = document.getElementById("baseLink");
+      const subsInput = document.getElementById("subs");
+
+      baseLinkInput.value = currentUrl.searchParams.get("baseLink") || "";
+      subsInput.value = currentUrl.searchParams.getAll("subs").join("\n");
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        let baseUrl;
+        try {
+          baseUrl = new URL(baseLinkInput.value.trim(), window.location.origin);
+        } catch {
+          output.hidden = false;
+          actions.hidden = true;
+          code.textContent = "原生成链接不是合法 URL";
+          return;
+        }
+
+        baseUrl.searchParams.delete("subs");
+        subsInput.value
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0)
+          .forEach((line) => baseUrl.searchParams.append("subs", line));
+
+        output.hidden = false;
+        actions.hidden = false;
+        code.textContent = baseUrl.toString();
+      });
+
+      copyLinkButton.addEventListener("click", async () => {
+        if (!code.textContent) {
+          return;
+        }
+        await navigator.clipboard.writeText(code.textContent);
+        copyLinkButton.textContent = "已复制";
+        window.setTimeout(() => {
+          copyLinkButton.textContent = "复制链接";
+        }, 1200);
+      });
+
+      openLinkButton.addEventListener("click", () => {
+        if (!code.textContent) {
+          return;
+        }
+        window.open(code.textContent, "_blank", "noopener,noreferrer");
+      });
+    </script>
+  </body>
+</html>

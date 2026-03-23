@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clash Meta 订阅生成</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f1e8;
+        --card: #fffdf8;
+        --ink: #1e2a21;
+        --muted: #5b675f;
+        --line: #d4d0c6;
+        --accent: #0e6b50;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(14, 107, 80, 0.12), transparent 30%),
+          linear-gradient(180deg, #f7f4ec 0%, var(--bg) 100%);
+        color: var(--ink);
+      }
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 48px 20px 72px;
+      }
+      .card {
+        position: relative;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 28px;
+        box-shadow: 0 20px 50px rgba(24, 34, 28, 0.08);
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(32px, 6vw, 52px);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+      }
+      p {
+        margin: 0 0 24px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      form {
+        display: grid;
+        gap: 16px;
+      }
+      label {
+        display: grid;
+        gap: 8px;
+        font-weight: 600;
+      }
+      input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px 16px;
+        font: inherit;
+        color: inherit;
+        background: #ffffff;
+      }
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 14px 18px;
+        font: inherit;
+        font-weight: 700;
+        color: white;
+        background: var(--accent);
+        cursor: pointer;
+      }
+      output {
+        display: block;
+        margin-top: 20px;
+        padding: 16px;
+        border-radius: 16px;
+        background: #eef6f1;
+        border: 1px solid #c7dfd5;
+        overflow-wrap: anywhere;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 13px;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 14px;
+      }
+      .actions[hidden] {
+        display: none;
+      }
+      .ghost {
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--line);
+      }
+      .tips {
+        margin-top: 22px;
+        padding-top: 18px;
+        border-top: 1px dashed var(--line);
+        display: grid;
+        gap: 8px;
+        color: var(--muted);
+      }
+      .link {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .corner-link {
+        position: absolute;
+        top: 24px;
+        right: 28px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="card">
+        <a class="link corner-link" href="/append-subs.html">额外订阅拼接</a>
+        <h1>Clash Meta<br />订阅生成</h1>
+        <p>传入配置 YAML URL 和 extra YAML URL，服务会实时生成最终的 Clash Meta 订阅。</p>
+        <form id="builder">
+          <label>
+            config
+            <input id="config" name="config" type="url" required placeholder="https://example.com/config.yaml" />
+          </label>
+          <label>
+            extra
+            <input id="extra" name="extra" type="url" required placeholder="https://example.com/extra.yaml" />
+          </label>
+          <label>
+            token
+            <input id="token" name="token" type="text" required placeholder="ACCESS_TOKEN" />
+          </label>
+          <button type="submit">生成订阅链接</button>
+        </form>
+        <output id="result" hidden><code></code></output>
+        <div id="actions" class="actions" hidden>
+          <button id="copyLink" type="button" class="ghost">复制链接</button>
+          <button id="openLink" type="button">打开链接</button>
+        </div>
+        <div class="tips">
+          <div>接口：<code>GET /sub?config=...&extra=...&token=...</code></div>
+        </div>
+      </section>
+    </main>
+    <script>
+      const form = document.getElementById("builder");
+      const output = document.getElementById("result");
+      const code = output.querySelector("code");
+      const actions = document.getElementById("actions");
+      const copyLinkButton = document.getElementById("copyLink");
+      const openLinkButton = document.getElementById("openLink");
+      const currentUrl = new URL(window.location.href);
+
+      const configInput = document.getElementById("config");
+      const extraInput = document.getElementById("extra");
+      const tokenInput = document.getElementById("token");
+
+      configInput.value = currentUrl.searchParams.get("config") || "";
+      extraInput.value = currentUrl.searchParams.get("extra") || "";
+      tokenInput.value = currentUrl.searchParams.get("token") || "";
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const data = new FormData(form);
+        const params = new URLSearchParams();
+        params.set("config", String(data.get("config") || ""));
+        params.set("extra", String(data.get("extra") || ""));
+        params.set("token", String(data.get("token") || ""));
+        const nextUrl = new URL("/sub", window.location.origin);
+        nextUrl.search = params.toString();
+        output.hidden = false;
+        actions.hidden = false;
+        code.textContent = nextUrl.toString();
+      });
+
+      copyLinkButton.addEventListener("click", async () => {
+        if (!code.textContent) {
+          return;
+        }
+        await navigator.clipboard.writeText(code.textContent);
+        copyLinkButton.textContent = "已复制";
+        window.setTimeout(() => {
+          copyLinkButton.textContent = "复制链接";
+        }, 1200);
+      });
+
+      openLinkButton.addEventListener("click", () => {
+        if (!code.textContent) {
+          return;
+        }
+        window.open(code.textContent, "_blank", "noopener,noreferrer");
+      });
+    </script>
+  </body>
+</html>

@@ -171,17 +171,15 @@
 
 ## Cloudflare 配置
 
-仓库中提交的是示例文件 [wrangler.example.toml](../wrangler.example.toml)。
+仓库中同时保留了 [wrangler.toml](../wrangler.toml) 与 [wrangler.example.toml](../wrangler.example.toml) 两份模板配置，用于一键部署和手动部署说明。
 
-本地部署时应复制为 `wrangler.toml`，再填写真实配置。
-
-示例配置要点：
+当前模板配置要点：
 
 - Worker 名称：`clash-meta-subgen`
 - 静态资源目录：`public`
 - `404-page` 静态兜底
 - `/sub` 优先进入 Worker
-- 自定义域名：按你的实际部署环境配置
+- 默认不绑定自定义域名
 
 ## 测试
 

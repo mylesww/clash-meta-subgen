@@ -27,29 +27,23 @@
 
 ## 快速开始
 
-1. 准备两个可通过 `https://` 访问的远程 YAML
+推荐方式：使用 Cloudflare 一键部署。
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/mylesww/clash-meta-subgen)
+
+1. 点击上面的 `Deploy to Cloudflare`
+
+2. 在 Cloudflare 部署页完成项目导入，并填写需要的密钥
+
+- `ACCESS_TOKEN`
+- `RESULT_CACHE_TTL_SECONDS`
+
+3. 部署完成后，默认会得到一个 `workers.dev` 地址
+
+4. 准备两个可通过 `https://` 访问的远程 YAML
 
 - 一个 `config.yaml`
 - 一个 `extra.yaml`
-
-2. 复制部署模板
-
-```bash
-cp wrangler.example.toml wrangler.toml
-```
-
-3. 设置 Worker 密钥
-
-```bash
-npx wrangler secret put ACCESS_TOKEN
-npx wrangler secret put RESULT_CACHE_TTL_SECONDS
-```
-
-4. 部署服务
-
-```bash
-npm run deploy
-```
 
 5. 通过网页生成链接
 
@@ -77,6 +71,8 @@ https://your-domain.example/sub?config=https://example.com/config.yaml&extra=htt
 ```text
 https://your-domain.example/sub?config=https://example.com/config.yaml&extra=https://example.com/extra.yaml&token=YOUR_TOKEN&subs=https://example.com/sub-a&subs=https://example.com/sub-b
 ```
+
+如需绑定自定义域名，建议在部署完成后再到 Cloudflare Dashboard 为该 Worker 添加 Custom Domain。
 
 ## 相关文档
 

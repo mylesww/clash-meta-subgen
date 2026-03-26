@@ -128,6 +128,89 @@ proxyGroups:
     ]);
   });
 
+  it("parses nodeMatch includeTags as a string array", () => {
+    const config = parseConfigYaml(
+      `
+subs:
+  - url: https://example.com/sub
+    tag: alpha
+ruleSets: []
+proxyGroups:
+  - name: 🚀 节点选择
+    type: select
+    members:
+      - type: nodeMatch
+        pattern: ".*"
+        includeTags:
+          - beta
+          - gamma
+`,
+      "config",
+    );
+
+    expect(config.proxyGroups[0].members).toEqual([
+      {
+        type: "nodeMatch",
+        pattern: ".*",
+        includeTags: ["beta", "gamma"],
+      },
+    ]);
+  });
+
+  it("parses nodeMatch includeTags together with excludeTags", () => {
+    const config = parseConfigYaml(
+      `
+subs:
+  - url: https://example.com/sub
+    tag: alpha
+ruleSets: []
+proxyGroups:
+  - name: 🚀 节点选择
+    type: select
+    members:
+      - type: nodeMatch
+        pattern: ".*"
+        includeTags:
+          - beta
+        excludeTags:
+          - gamma
+`,
+      "config",
+    );
+
+    expect(config.proxyGroups[0].members).toEqual([
+      {
+        type: "nodeMatch",
+        pattern: ".*",
+        includeTags: ["beta"],
+        excludeTags: ["gamma"],
+      },
+    ]);
+  });
+
+  it("rejects non-string values inside nodeMatch includeTags", () => {
+    expect(() =>
+      parseConfigYaml(
+        `
+subs:
+  - url: https://example.com/sub
+    tag: alpha
+ruleSets: []
+proxyGroups:
+  - name: 🚀 节点选择
+    type: select
+    members:
+      - type: nodeMatch
+        pattern: ".*"
+        includeTags:
+          - beta
+          - 123
+`,
+        "config",
+      ),
+    ).toThrow(/includeTags\[1\]/i);
+  });
+
   it("rejects non-string values inside nodeMatch excludeTags", () => {
     expect(() =>
       parseConfigYaml(

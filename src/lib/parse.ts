@@ -288,6 +288,12 @@ function parseGroupMember(value: unknown, label: string): GroupMember {
       return {
         type,
         pattern: asString(value.pattern, `${label}.pattern`),
+        includeTags:
+          value.includeTags === undefined
+            ? undefined
+            : asArray(value.includeTags, `${label}.includeTags`).map((item, index) =>
+                asString(item, `${label}.includeTags[${index}]`),
+              ),
         excludeTags:
           value.excludeTags === undefined
             ? undefined

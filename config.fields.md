@@ -178,22 +178,31 @@ members:
 
 ### `nodeMatch`
 
-通过正则表达式直接筛选节点。
+通过正则表达式直接筛选节点，也可以先按订阅 `tag` 缩小候选范围。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `type` | `"nodeMatch"` | 是 | 固定值。 |
+| `includeTags` | `string[]` | 否 | 只从这些订阅 `tag` 导入的节点里继续匹配；为空数组时结果为空。 |
 | `pattern` | `string` | 是 | 用于匹配节点名称的正则表达式。 |
-| `excludeTags` | `string[]` | 否 | 排除指定订阅 `tag` 的节点，发生在 `pattern` 命中之后。 |
+| `excludeTags` | `string[]` | 否 | 从 `includeTags` 缩小后的候选范围里继续排除指定订阅 `tag` 的节点。 |
 
 示例：
 
 ```yaml
 type: nodeMatch
+includeTags:
+  - provider-a
 pattern: ".*(家宽|无线|住宅)"
 excludeTags:
   - backup-provider
 ```
+
+匹配顺序：
+
+- 如果提供了 `includeTags`，先按 `tag` 缩小候选节点范围。
+- 再应用 `excludeTags` 排除来源。
+- 最后再对剩余候选节点名称应用 `pattern`。
 
 ## `UrlTestConfig`
 
@@ -242,6 +251,22 @@ type: select
 members:
   - type: nodeMatch
     pattern: ".*"
+```
+
+### 按订阅 tag 缩小范围后再筛节点
+
+```yaml
+name: 🇭🇰 定向香港
+type: url-test
+test:
+  url: http://www.gstatic.com/generate_204
+  interval: 120
+  tolerance: 20
+members:
+  - type: nodeMatch
+    includeTags:
+      - provider-a
+    pattern: "(港|HK|Hong Kong)"
 ```
 
 ### GeoIP / Final

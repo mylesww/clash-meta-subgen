@@ -553,6 +553,153 @@ proxies:
     expect(proxyGroups[0].proxies).toEqual(["hk-a"]);
   });
 
+  it("includes nodeMatch candidates only from the requested source tag", async () => {
+    const configYaml = `
+subs:
+  - url: https://example.com/sub-a
+    tag: provider-a
+  - url: https://example.com/sub-b
+    tag: provider-b
+ruleSets: []
+proxyGroups:
+  - name: 🇭🇰 香港节点
+    type: select
+    members:
+      - type: nodeMatch
+        pattern: "hk"
+        includeTags:
+          - provider-b
+`;
+
+    const extraYaml = "mode: Rule\n";
+    const clashSubscriptionA = `
+proxies:
+  - name: hk-a
+    type: ss
+    server: hk-a.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: secret
+`;
+    const clashSubscriptionB = `
+proxies:
+  - name: hk-b
+    type: ss
+    server: hk-b.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: secret
+`;
+
+    const fetchFn: typeof fetch = async (input) => {
+      const url = String(input);
+      const bodyMap = new Map<string, string>([
+        ["https://example.com/config.yaml", configYaml],
+        ["https://example.com/extra.yaml", extraYaml],
+        ["https://example.com/sub-a", clashSubscriptionA],
+        ["https://example.com/sub-b", clashSubscriptionB],
+      ]);
+
+      const body = bodyMap.get(url);
+      if (!body) {
+        return new Response("not found", { status: 404 });
+      }
+
+      return new Response(body, { status: 200 });
+    };
+
+    const output = await generateClashYaml({
+      configUrl: "https://example.com/config.yaml",
+      extraUrl: "https://example.com/extra.yaml",
+      fetchFn,
+    });
+
+    const parsed = parseYaml(output) as Record<string, unknown>;
+    const proxyGroups = parsed["proxy-groups"] as Array<Record<string, unknown>>;
+
+    expect(proxyGroups[0].proxies).toEqual(["hk-b"]);
+  });
+
+  it("includes nodeMatch candidates from multiple includeTags", async () => {
+    const configYaml = `
+subs:
+  - url: https://example.com/sub-a
+    tag: provider-a
+  - url: https://example.com/sub-b
+    tag: provider-b
+  - url: https://example.com/sub-c
+    tag: provider-c
+ruleSets: []
+proxyGroups:
+  - name: 🇭🇰 香港节点
+    type: select
+    members:
+      - type: nodeMatch
+        pattern: "hk"
+        includeTags:
+          - provider-a
+          - provider-c
+`;
+
+    const extraYaml = "mode: Rule\n";
+    const clashSubscriptionA = `
+proxies:
+  - name: hk-a
+    type: ss
+    server: hk-a.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: secret
+`;
+    const clashSubscriptionB = `
+proxies:
+  - name: hk-b
+    type: ss
+    server: hk-b.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: secret
+`;
+    const clashSubscriptionC = `
+proxies:
+  - name: hk-c
+    type: ss
+    server: hk-c.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: secret
+`;
+
+    const fetchFn: typeof fetch = async (input) => {
+      const url = String(input);
+      const bodyMap = new Map<string, string>([
+        ["https://example.com/config.yaml", configYaml],
+        ["https://example.com/extra.yaml", extraYaml],
+        ["https://example.com/sub-a", clashSubscriptionA],
+        ["https://example.com/sub-b", clashSubscriptionB],
+        ["https://example.com/sub-c", clashSubscriptionC],
+      ]);
+
+      const body = bodyMap.get(url);
+      if (!body) {
+        return new Response("not found", { status: 404 });
+      }
+
+      return new Response(body, { status: 200 });
+    };
+
+    const output = await generateClashYaml({
+      configUrl: "https://example.com/config.yaml",
+      extraUrl: "https://example.com/extra.yaml",
+      fetchFn,
+    });
+
+    const parsed = parseYaml(output) as Record<string, unknown>;
+    const proxyGroups = parsed["proxy-groups"] as Array<Record<string, unknown>>;
+
+    expect(proxyGroups[0].proxies).toEqual(["hk-a", "hk-c"]);
+  });
+
   it("keeps nodeMatch behavior unchanged when excludeTags is omitted", async () => {
     const configYaml = `
 subs:
@@ -616,6 +763,60 @@ proxies:
     const proxyGroups = parsed["proxy-groups"] as Array<Record<string, unknown>>;
 
     expect(proxyGroups[0].proxies).toEqual(["hk-a", "hk-b"]);
+  });
+
+  it("yields no nodeMatch candidates when includeTags is an empty list", async () => {
+    const configYaml = `
+subs:
+  - url: https://example.com/sub-a
+    tag: provider-a
+ruleSets: []
+proxyGroups:
+  - name: 🇭🇰 香港节点
+    type: select
+    members:
+      - type: nodeMatch
+        pattern: "hk"
+        includeTags: []
+`;
+
+    const extraYaml = "mode: Rule\n";
+    const clashSubscriptionA = `
+proxies:
+  - name: hk-a
+    type: ss
+    server: hk-a.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: secret
+`;
+
+    const fetchFn: typeof fetch = async (input) => {
+      const url = String(input);
+      const bodyMap = new Map<string, string>([
+        ["https://example.com/config.yaml", configYaml],
+        ["https://example.com/extra.yaml", extraYaml],
+        ["https://example.com/sub-a", clashSubscriptionA],
+      ]);
+
+      const body = bodyMap.get(url);
+      if (!body) {
+        return new Response("not found", { status: 404 });
+      }
+
+      return new Response(body, { status: 200 });
+    };
+
+    const output = await generateClashYaml({
+      configUrl: "https://example.com/config.yaml",
+      extraUrl: "https://example.com/extra.yaml",
+      fetchFn,
+    });
+
+    const parsed = parseYaml(output) as Record<string, unknown>;
+    const proxyGroups = parsed["proxy-groups"] as Array<Record<string, unknown>>;
+
+    expect(proxyGroups[0].proxies).toEqual([]);
   });
 
   it("uses the real source tag for excludeTags when names collide", async () => {
@@ -687,6 +888,88 @@ proxies:
     expect(proxyGroups[0].proxies).toEqual(["hk"]);
   });
 
+  it("combines includeTags and excludeTags before matching the final pattern", async () => {
+    const configYaml = `
+subs:
+  - url: https://example.com/sub-a
+    tag: provider-a
+  - url: https://example.com/sub-b
+    tag: provider-b
+  - url: https://example.com/sub-c
+    tag: provider-c
+ruleSets: []
+proxyGroups:
+  - name: 🇭🇰 香港节点
+    type: select
+    members:
+      - type: nodeMatch
+        pattern: "hk"
+        includeTags:
+          - provider-a
+          - provider-b
+        excludeTags:
+          - provider-b
+`;
+
+    const extraYaml = "mode: Rule\n";
+    const clashSubscriptionA = `
+proxies:
+  - name: hk-a
+    type: ss
+    server: hk-a.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: secret
+`;
+    const clashSubscriptionB = `
+proxies:
+  - name: hk-b
+    type: ss
+    server: hk-b.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: secret
+`;
+    const clashSubscriptionC = `
+proxies:
+  - name: hk-c
+    type: ss
+    server: hk-c.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: secret
+`;
+
+    const fetchFn: typeof fetch = async (input) => {
+      const url = String(input);
+      const bodyMap = new Map<string, string>([
+        ["https://example.com/config.yaml", configYaml],
+        ["https://example.com/extra.yaml", extraYaml],
+        ["https://example.com/sub-a", clashSubscriptionA],
+        ["https://example.com/sub-b", clashSubscriptionB],
+        ["https://example.com/sub-c", clashSubscriptionC],
+      ]);
+
+      const body = bodyMap.get(url);
+      if (!body) {
+        return new Response("not found", { status: 404 });
+      }
+
+      return new Response(body, { status: 200 });
+    };
+
+    const output = await generateClashYaml({
+      configUrl: "https://example.com/config.yaml",
+      extraUrl: "https://example.com/extra.yaml",
+      fetchFn,
+    });
+
+    const parsed = parseYaml(output) as Record<string, unknown>;
+    const proxyGroups = parsed["proxy-groups"] as Array<Record<string, unknown>>;
+
+    expect(proxyGroups[0].proxies).toEqual(["hk-a"]);
+  });
+
   it("ignores unknown excludeTags without failing", async () => {
     const configYaml = `
 subs:
@@ -740,5 +1023,131 @@ proxies:
     const proxyGroups = parsed["proxy-groups"] as Array<Record<string, unknown>>;
 
     expect(proxyGroups[0].proxies).toEqual(["hk-a"]);
+  });
+
+  it("ignores unknown includeTags without failing", async () => {
+    const configYaml = `
+subs:
+  - url: https://example.com/sub-a
+    tag: provider-a
+ruleSets: []
+proxyGroups:
+  - name: 🇭🇰 香港节点
+    type: select
+    members:
+      - type: nodeMatch
+        pattern: "hk"
+        includeTags:
+          - provider-b
+`;
+
+    const extraYaml = "mode: Rule\n";
+    const clashSubscriptionA = `
+proxies:
+  - name: hk-a
+    type: ss
+    server: hk-a.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: secret
+`;
+
+    const fetchFn: typeof fetch = async (input) => {
+      const url = String(input);
+      const bodyMap = new Map<string, string>([
+        ["https://example.com/config.yaml", configYaml],
+        ["https://example.com/extra.yaml", extraYaml],
+        ["https://example.com/sub-a", clashSubscriptionA],
+      ]);
+
+      const body = bodyMap.get(url);
+      if (!body) {
+        return new Response("not found", { status: 404 });
+      }
+
+      return new Response(body, { status: 200 });
+    };
+
+    const output = await generateClashYaml({
+      configUrl: "https://example.com/config.yaml",
+      extraUrl: "https://example.com/extra.yaml",
+      fetchFn,
+    });
+
+    const parsed = parseYaml(output) as Record<string, unknown>;
+    const proxyGroups = parsed["proxy-groups"] as Array<Record<string, unknown>>;
+
+    expect(proxyGroups[0].proxies).toEqual([]);
+  });
+
+  it("supports url-test groups with tag-scoped nodeMatch members", async () => {
+    const configYaml = `
+subs:
+  - url: https://example.com/sub-a
+    tag: scoped-provider
+  - url: https://example.com/sub-b
+    tag: other
+ruleSets: []
+proxyGroups:
+  - name: 🇭🇰 定向香港
+    type: url-test
+    test:
+      url: http://www.gstatic.com/generate_204
+      interval: 120
+      tolerance: 20
+    members:
+      - type: nodeMatch
+        includeTags:
+          - scoped-provider
+        pattern: "hk"
+`;
+
+    const extraYaml = "mode: Rule\n";
+    const clashSubscriptionA = `
+proxies:
+  - name: hk-scoped
+    type: ss
+    server: hk-a.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: secret
+`;
+    const clashSubscriptionB = `
+proxies:
+  - name: hk-other
+    type: ss
+    server: hk-b.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: secret
+`;
+
+    const fetchFn: typeof fetch = async (input) => {
+      const url = String(input);
+      const bodyMap = new Map<string, string>([
+        ["https://example.com/config.yaml", configYaml],
+        ["https://example.com/extra.yaml", extraYaml],
+        ["https://example.com/sub-a", clashSubscriptionA],
+        ["https://example.com/sub-b", clashSubscriptionB],
+      ]);
+
+      const body = bodyMap.get(url);
+      if (!body) {
+        return new Response("not found", { status: 404 });
+      }
+
+      return new Response(body, { status: 200 });
+    };
+
+    const output = await generateClashYaml({
+      configUrl: "https://example.com/config.yaml",
+      extraUrl: "https://example.com/extra.yaml",
+      fetchFn,
+    });
+
+    const parsed = parseYaml(output) as Record<string, unknown>;
+    const proxyGroups = parsed["proxy-groups"] as Array<Record<string, unknown>>;
+
+    expect(proxyGroups[0].proxies).toEqual(["hk-scoped"]);
   });
 });

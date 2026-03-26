@@ -212,9 +212,13 @@ function resolveMembers(
         } catch {
           throw new HttpError(400, `proxyGroups.${group.name} has invalid regex: ${member.pattern}`);
         }
+        const includedTags = member.includeTags ? new Set(member.includeTags) : null;
         const excludedTags = new Set(member.excludeTags ?? []);
         const matches = context.proxyEntries.filter(
-          (entry) => matcher.test(entry.name) && !excludedTags.has(entry.sourceTag),
+          (entry) =>
+            (!includedTags || includedTags.has(entry.sourceTag)) &&
+            !excludedTags.has(entry.sourceTag) &&
+            matcher.test(entry.name),
         );
         for (const match of matches) {
           pushUnique(match.name);

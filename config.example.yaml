@@ -250,6 +250,17 @@ proxyGroups:
     members:
       - type: nodeMatch
         pattern: "(港|HK|Hong Kong)"
+  - name: 🇭🇰 定向香港
+    type: url-test
+    test:
+      url: "http://www.gstatic.com/generate_204"
+      interval: 120
+      tolerance: 20
+    members:
+      - type: nodeMatch
+        includeTags:
+          - provider-a
+        pattern: "(港|HK|Hong Kong)"
   - name: 🧠 sider域名
     type: select
     members:

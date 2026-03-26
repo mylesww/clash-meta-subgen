@@ -125,12 +125,13 @@
 
 - `group`：引用已声明策略组
 - `builtin`：内建动作，如 `DIRECT`、`REJECT`
-- `nodeMatch`：用正则匹配最终节点名
+- `nodeMatch`：可先按订阅 `tag` 缩小范围，再用正则匹配最终节点名
 
 注意：
 
 - `url-test` 组必须最终只包含具体节点名
 - 如果展开后仍包含组名或内建动作，会返回 `400`
+- `nodeMatch.includeTags` 先做正向来源过滤，`excludeTags` 再做排除，最后才应用正则匹配
 
 ## 缓存与鉴权
 

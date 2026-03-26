@@ -2,6 +2,10 @@ name = "clash-meta-subgen"
 main = "src/index.ts"
 compatibility_date = "2026-03-20"
 
+[vars]
+# Cache generated subscriptions for 5 minutes by default.
+RESULT_CACHE_TTL_SECONDS = "300"
+
 [assets]
 directory = "./public"
 not_found_handling = "404-page"

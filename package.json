@@ -3,6 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "cloudflare": {
+    "bindings": {
+      "ACCESS_TOKEN": {
+        "description": "用于 `/sub?token=...` 鉴权的访问令牌。请设置一个足够复杂的值"
+      },
+      "RESULT_CACHE_TTL_SECONDS": {
+        "description": "生成后的订阅缓存时长，单位为秒。默认值为 `300`。"
+      }
+    }
+  },
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",

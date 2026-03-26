@@ -288,6 +288,12 @@ function parseGroupMember(value: unknown, label: string): GroupMember {
       return {
         type,
         pattern: asString(value.pattern, `${label}.pattern`),
+        excludeTags:
+          value.excludeTags === undefined
+            ? undefined
+            : asArray(value.excludeTags, `${label}.excludeTags`).map((item, index) =>
+                asString(item, `${label}.excludeTags[${index}]`),
+              ),
       };
     default:
       throw new HttpError(400, `${label}.type is not supported: ${type}`);

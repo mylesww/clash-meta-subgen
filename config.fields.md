@@ -184,12 +184,15 @@ members:
 | --- | --- | --- | --- |
 | `type` | `"nodeMatch"` | 是 | 固定值。 |
 | `pattern` | `string` | 是 | 用于匹配节点名称的正则表达式。 |
+| `excludeTags` | `string[]` | 否 | 排除指定订阅 `tag` 的节点，发生在 `pattern` 命中之后。 |
 
 示例：
 
 ```yaml
 type: nodeMatch
 pattern: ".*(家宽|无线|住宅)"
+excludeTags:
+  - backup-provider
 ```
 
 ## `UrlTestConfig`

@@ -21,8 +21,13 @@ import type {
 
 interface ResolvedProxyContext {
   proxies: ClashProxy[];
-  proxyNames: string[];
+  proxyEntries: ResolvedProxyEntry[];
   proxyNameSet: Set<string>;
+}
+
+interface ResolvedProxyEntry {
+  name: string;
+  sourceTag: string;
 }
 
 export async function generateClashYaml(options: GenerateOptions): Promise<string> {
@@ -62,6 +67,7 @@ export async function generateClashYaml(options: GenerateOptions): Promise<strin
 async function loadAllProxies(config: ConfigFile, fetchFn: typeof fetch): Promise<ResolvedProxyContext> {
   const usedNames = new Set<string>();
   const proxies: ClashProxy[] = [];
+  const proxyEntries: ResolvedProxyEntry[] = [];
   const globalExcludeMatcher = buildExcludeMatcher(config.exclude, "exclude");
 
   for (const source of config.subs) {
@@ -78,12 +84,16 @@ async function loadAllProxies(config: ConfigFile, fetchFn: typeof fetch): Promis
       const renamed = renameProxy(proxy, source.tag, usedNames);
       usedNames.add(renamed.name);
       proxies.push(renamed);
+      proxyEntries.push({
+        name: renamed.name,
+        sourceTag: source.tag,
+      });
     }
   }
 
   return {
     proxies,
-    proxyNames: proxies.map((proxy) => proxy.name),
+    proxyEntries,
     proxyNameSet: new Set(proxies.map((proxy) => proxy.name)),
   };
 }
@@ -202,9 +212,12 @@ function resolveMembers(
         } catch {
           throw new HttpError(400, `proxyGroups.${group.name} has invalid regex: ${member.pattern}`);
         }
-        const matches = context.proxyNames.filter((name) => matcher.test(name));
+        const excludedTags = new Set(member.excludeTags ?? []);
+        const matches = context.proxyEntries.filter(
+          (entry) => matcher.test(entry.name) && !excludedTags.has(entry.sourceTag),
+        );
         for (const match of matches) {
-          pushUnique(match);
+          pushUnique(match.name);
         }
         break;
       }

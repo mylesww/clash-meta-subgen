@@ -55,6 +55,7 @@ export interface BuiltinMember {
 export interface NodeMatchMember {
   type: "nodeMatch";
   pattern: string;
+  excludeTags?: string[];
 }
 
 export type GroupMember = GroupRefMember | BuiltinMember | NodeMatchMember;

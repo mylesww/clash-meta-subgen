@@ -99,6 +99,58 @@ proxyGroups: []
     expect(config.subs).toEqual([{ url: "https://example.com/sub", tag: "alpha" }]);
   });
 
+  it("parses nodeMatch excludeTags as a string array", () => {
+    const config = parseConfigYaml(
+      `
+subs:
+  - url: https://example.com/sub
+    tag: alpha
+ruleSets: []
+proxyGroups:
+  - name: 🚀 节点选择
+    type: select
+    members:
+      - type: nodeMatch
+        pattern: ".*"
+        excludeTags:
+          - beta
+          - gamma
+`,
+      "config",
+    );
+
+    expect(config.proxyGroups[0].members).toEqual([
+      {
+        type: "nodeMatch",
+        pattern: ".*",
+        excludeTags: ["beta", "gamma"],
+      },
+    ]);
+  });
+
+  it("rejects non-string values inside nodeMatch excludeTags", () => {
+    expect(() =>
+      parseConfigYaml(
+        `
+subs:
+  - url: https://example.com/sub
+    tag: alpha
+ruleSets: []
+proxyGroups:
+  - name: 🚀 节点选择
+    type: select
+    members:
+      - type: nodeMatch
+        pattern: ".*"
+        excludeTags:
+          - beta
+          - 123
+`,
+        "config",
+      ),
+    ).toThrow(/excludeTags\[1\]/i);
+  });
+
   it("rejects the legacy urls field", () => {
     expect(() =>
       parseConfigYaml(

@@ -672,6 +672,8 @@ proxyGroups:
     members:
       - type: nodeMatch
         pattern: "(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan)"
+        excludeTags:
+          - provider-b
   - name: 🇺🇲 美国节点
     type: url-test
     test:

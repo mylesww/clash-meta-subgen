@@ -4,6 +4,7 @@ import { HttpError } from "./errors";
 import {
   assertHttpsUrl,
   fetchText,
+  fetchTextWithHeaders,
   parseConfigYaml,
   parseExtraYaml,
   parseSubscriptionPayload,
@@ -23,6 +24,7 @@ interface ResolvedProxyContext {
   proxies: ClashProxy[];
   proxyEntries: ResolvedProxyEntry[];
   proxyNameSet: Set<string>;
+  forwardedHeaders: Headers;
 }
 
 interface ResolvedProxyEntry {
@@ -30,7 +32,21 @@ interface ResolvedProxyEntry {
   sourceTag: string;
 }
 
+const FORWARDED_SUBSCRIPTION_HEADERS = [
+  "subscription-userinfo",
+  "profile-web-page-url",
+  "profile-update-interval",
+  "content-disposition",
+] as const;
+
 export async function generateClashYaml(options: GenerateOptions): Promise<string> {
+  const { yaml } = await generateClashProfile(options);
+  return yaml;
+}
+
+export async function generateClashProfile(
+  options: GenerateOptions,
+): Promise<{ yaml: string; forwardedHeaders: Headers }> {
   const fetchFn = options.fetchFn ?? fetch;
   const configUrl = assertHttpsUrl(options.configUrl, "config").toString();
   const extraUrl = assertHttpsUrl(options.extraUrl, "extra").toString();
@@ -46,7 +62,7 @@ export async function generateClashYaml(options: GenerateOptions): Promise<strin
     subs: [...configFromFile.subs, ...(options.extraSubs ?? [])],
   };
   const extra = parseExtraYaml(extraText, "extra");
-  const resolvedProxies = await loadAllProxies(config, fetchFn);
+  const resolvedProxies = await loadAllProxies(config, fetchFn, options.subscriptionFetchHeaders);
   const proxyGroups = buildProxyGroups(config, resolvedProxies);
   const rules = await buildRules(config, fetchFn);
 
@@ -57,22 +73,38 @@ export async function generateClashYaml(options: GenerateOptions): Promise<strin
     rules,
   };
 
-  return stringifyYaml(output, {
-    lineWidth: 0,
-    indent: 2,
-    simpleKeys: true,
-  });
+  return {
+    yaml: stringifyYaml(output, {
+      lineWidth: 0,
+      indent: 2,
+      simpleKeys: true,
+    }),
+    forwardedHeaders: resolvedProxies.forwardedHeaders,
+  };
 }
 
-async function loadAllProxies(config: ConfigFile, fetchFn: typeof fetch): Promise<ResolvedProxyContext> {
+async function loadAllProxies(
+  config: ConfigFile,
+  fetchFn: typeof fetch,
+  subscriptionFetchHeaders?: HeadersInit,
+): Promise<ResolvedProxyContext> {
   const usedNames = new Set<string>();
   const proxies: ClashProxy[] = [];
   const proxyEntries: ResolvedProxyEntry[] = [];
   const globalExcludeMatcher = buildExcludeMatcher(config.exclude, "exclude");
+  const forwardedHeaders = new Headers();
 
-  for (const source of config.subs) {
+  for (const [index, source] of config.subs.entries()) {
     assertHttpsUrl(source.url, `subs[${source.tag}]`);
-    const text = await fetchText(source.url, `subscription "${source.tag}"`, fetchFn);
+    const { text, headers } = await fetchTextWithHeaders(
+      source.url,
+      `subscription "${source.tag}"`,
+      fetchFn,
+      subscriptionFetchHeaders,
+    );
+    if (!hasForwardedSubscriptionHeaders(forwardedHeaders) && hasForwardedSubscriptionHeaders(headers)) {
+      copyForwardedHeaders(headers, forwardedHeaders);
+    }
     const parsed = parseSubscriptionPayload(text, source.tag);
     const excludeMatcher = buildExcludeMatcher(source.exclude, `subs[${source.tag}].exclude`);
     const filtered = parsed.filter(
@@ -95,7 +127,21 @@ async function loadAllProxies(config: ConfigFile, fetchFn: typeof fetch): Promis
     proxies,
     proxyEntries,
     proxyNameSet: new Set(proxies.map((proxy) => proxy.name)),
+    forwardedHeaders,
   };
+}
+
+function copyForwardedHeaders(source: Headers, target: Headers): void {
+  for (const headerName of FORWARDED_SUBSCRIPTION_HEADERS) {
+    const value = source.get(headerName);
+    if (value) {
+      target.set(headerName, value);
+    }
+  }
+}
+
+function hasForwardedSubscriptionHeaders(headers: Headers): boolean {
+  return FORWARDED_SUBSCRIPTION_HEADERS.some((headerName) => Boolean(headers.get(headerName)));
 }
 
 function renameProxy(proxy: ClashProxy, tag: string, usedNames: Set<string>): ClashProxy {

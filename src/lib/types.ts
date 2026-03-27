@@ -97,4 +97,5 @@ export interface GenerateOptions {
   extraUrl: string;
   extraSubs?: SubConfig[];
   fetchFn?: typeof fetch;
+  subscriptionFetchHeaders?: HeadersInit;
 }

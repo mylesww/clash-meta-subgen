@@ -1,4 +1,4 @@
-import { generateClashYaml } from "./lib/generate";
+import { generateClashProfile } from "./lib/generate";
 import { HttpError, isHttpError } from "./lib/errors";
 import { assertHttpsUrl } from "./lib/parse";
 import type { Env, SubConfig } from "./lib/types";
@@ -26,10 +26,14 @@ export default {
           throw new HttpError(400, "Missing required query params: config, extra");
         }
         const extraSubs = parseExtraSubs(url.searchParams);
+        const subscriptionHeaderMode = getSubscriptionHeaderMode(request.headers);
+        const subscriptionFetchHeaders = buildSubscriptionFetchHeaders(request.headers, subscriptionHeaderMode);
 
         const cacheTtl = parseCacheTtl(env.RESULT_CACHE_TTL_SECONDS);
         const cache = caches.default;
-        const cacheKey = new Request(url.toString(), request);
+        const cacheUrl = new URL(url.toString());
+        cacheUrl.searchParams.set("__subscription_header_mode", subscriptionHeaderMode);
+        const cacheKey = new Request(cacheUrl.toString(), request);
 
         if (cacheTtl > 0) {
           const cached = await cache.match(cacheKey);
@@ -38,18 +42,20 @@ export default {
           }
         }
 
-        const yaml = await generateClashYaml({
+        const { yaml, forwardedHeaders } = await generateClashProfile({
           configUrl: config,
           extraUrl: extra,
           extraSubs,
+          subscriptionFetchHeaders,
         });
+
+        const responseHeaders = new Headers(forwardedHeaders);
+        responseHeaders.set("content-type", "text/yaml; charset=utf-8");
+        responseHeaders.set("cache-control", cacheTtl > 0 ? `public, max-age=${cacheTtl}` : "no-store");
 
         const response = new Response(yaml, {
           status: 200,
-          headers: {
-            "content-type": "text/yaml; charset=utf-8",
-            "cache-control": cacheTtl > 0 ? `public, max-age=${cacheTtl}` : "no-store",
-          },
+          headers: responseHeaders,
         });
 
         if (cacheTtl > 0) {
@@ -80,6 +86,33 @@ function parseExtraSubs(searchParams: URLSearchParams): SubConfig[] {
       url: assertHttpsUrl(value, `subs[${index}].url`).toString(),
       tag: `extra${index + 1}`,
     }));
+}
+
+function getSubscriptionHeaderMode(headers: Headers): "passthrough-clash" | "default" {
+  const userAgent = headers.get("user-agent") ?? "";
+  return userAgent.toLowerCase().includes("clash") ? "passthrough-clash" : "default";
+}
+
+function buildSubscriptionFetchHeaders(
+  requestHeaders: Headers,
+  mode: "passthrough-clash" | "default",
+): HeadersInit | undefined {
+  if (mode === "default") {
+    return undefined;
+  }
+
+  const forwarded = new Headers();
+  const userAgent = requestHeaders.get("user-agent");
+  const accept = requestHeaders.get("accept");
+
+  if (userAgent) {
+    forwarded.set("user-agent", userAgent);
+  }
+  if (accept) {
+    forwarded.set("accept", accept);
+  }
+
+  return forwarded;
 }
 
 function parseCacheTtl(input: string | undefined): number {

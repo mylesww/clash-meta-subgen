@@ -31,18 +31,38 @@ export function assertHttpsUrl(value: string, label: string): URL {
 }
 
 export async function fetchText(url: string, label: string, fetchFn: typeof fetch): Promise<string> {
+  const { text } = await fetchTextWithHeaders(url, label, fetchFn);
+  return text;
+}
+
+export async function fetchTextWithHeaders(
+  url: string,
+  label: string,
+  fetchFn: typeof fetch,
+  requestHeaders?: HeadersInit,
+): Promise<{ text: string; headers: Headers }> {
+  const headers = new Headers({
+    "User-Agent": "clash-meta-subgen/0.1.0",
+    Accept: "*/*",
+  });
+  if (requestHeaders) {
+    new Headers(requestHeaders).forEach((value, key) => {
+      headers.set(key, value);
+    });
+  }
+
   const response = await fetchFn(url, {
-    headers: {
-      "User-Agent": "clash-meta-subgen/0.1.0",
-      Accept: "*/*",
-    },
+    headers,
   });
 
   if (!response.ok) {
     throw new HttpError(502, `Failed to fetch ${label}: ${response.status} ${response.statusText}`);
   }
 
-  return response.text();
+  return {
+    text: await response.text(),
+    headers: response.headers,
+  };
 }
 
 export function parseConfigYaml(text: string, label: string): ConfigFile {

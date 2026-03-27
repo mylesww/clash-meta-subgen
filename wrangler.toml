@@ -3,7 +3,7 @@ main = "src/index.ts"
 compatibility_date = "2026-03-20"
 
 [vars]
-# Cache generated subscriptions for 5 minutes by default.
+# 默认情况下缓存生成的订阅5分钟。
 RESULT_CACHE_TTL_SECONDS = "300"
 
 [assets]

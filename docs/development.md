@@ -8,8 +8,9 @@
 - [src/lib/generate.ts](../src/lib/generate.ts)：主生成流程
 - [src/lib/parse.ts](../src/lib/parse.ts)：YAML、订阅、规则解析
 - [src/lib/types.ts](../src/lib/types.ts)：核心类型定义
-- [public/index.html](../public/index.html)：主静态页面
-- [public/append-subs.html](../public/append-subs.html)：额外订阅拼接页面
+- [web/src/App.tsx](../web/src/App.tsx)：React 单页应用、布局与前端路由
+- [web/src/lib/links.ts](../web/src/lib/links.ts)：订阅链接生成、校验与查询参数预填
+- [web/vite.config.ts](../web/vite.config.ts)：前端构建与开发代理
 - [tests/parse.test.ts](../tests/parse.test.ts)：解析层测试
 - [tests/generate.test.ts](../tests/generate.test.ts)：生成流程测试
 
@@ -149,7 +150,42 @@
 - 缓存键为完整请求 URL
 - TTL 由 `RESULT_CACHE_TTL_SECONDS` 控制
 
-## 静态页面
+## 前端开发
+
+前端使用 React、TypeScript、Vite 和 React Router，源码与静态资源位于 `web/`，产物位于 `web/dist/`（不提交）。依赖统一由根目录的 `package.json` 和 `package-lock.json` 管理。前端 DOM、构建工具 Node 和后端 Worker 使用各自的 TypeScript 配置。
+
+使用 Node.js 24.15 或更高版本安装依赖：
+
+```bash
+npm ci
+```
+
+在项目根目录的 `.dev.vars` 中设置本地 `ACCESS_TOKEN`，例如 `ACCESS_TOKEN="your-local-token"`。运行完整 Worker 和构建后的前端：
+
+```bash
+npm run dev
+```
+
+访问 `http://localhost:8787`。Wrangler 会先构建前端，并监听前端源码变化重新构建。
+
+需要 React 热更新时，保持上述命令运行，在另一个终端执行：
+
+```bash
+npm run dev:web
+```
+
+访问 Vite 输出的地址（默认 `http://localhost:5173`）。生成链接使用当前页面的域名；Vite 将 `/sub` 请求代理至 `http://127.0.0.1:8787`。如果更改 Worker 端口，需要同步修改 Vite 代理。
+
+生产构建与部署：
+
+```bash
+npm run build
+npm run deploy
+```
+
+`npm run build` 只构建前端。Wrangler 的自定义构建也会在 `dev`、`deploy` 时自动执行它，因此可直接运行 `npm run deploy`，Cloudflare 一键部署同样会包含前端产物。仅验证打包、不发布可运行 `npx wrangler deploy --dry-run`。
+
+## 网页功能
 
 ### 首页 `/`
 
@@ -159,16 +195,23 @@
 - 输入 `extra`
 - 输入 `token`
 - 生成基础 `/sub` 链接
+- 从查询参数 `config`、`extra`、`token` 预填表单
 - 支持复制与直接打开
 
-### `/append-subs.html`
+### `/append-subs`
 
 功能：
 
 - 输入已有生成链接
-- 追加额外订阅 URL
-- 重新生成带 `subs` 参数的新链接
+- 从查询参数 `baseLink` 和重复的 `subs` 预填表单
+- 每行输入一个额外订阅 URL，忽略空行，保留顺序与重复项
+- 用新列表替换原链接中的 `subs`；留空表示清除
+- 保留原链接的域名、路径、其他参数及片段
 - 支持复制与直接打开
+
+配置文件与额外订阅链接必须使用 HTTPS；原生成链接允许 HTTP 或 HTTPS。复制失败时自动选中结果以便手动复制。修改输入后会清除旧结果，避免复制与当前输入不一致的链接。
+
+界面采用中文响应式布局，表单数据只保存在内存中。导航通过浏览器 History 路由完成，支持直接访问、刷新与前进后退。未知地址显示应用内 404，不提供 `.html` 页面兼容路由。SPA 的 404 是客户端界面，页面导航本身由静态资源服务返回入口 HTML（HTTP 200）。
 
 ## Cloudflare 配置
 
@@ -177,9 +220,10 @@
 当前模板配置要点：
 
 - Worker 名称：`clash-meta-subgen`
-- 静态资源目录：`public`
-- `404-page` 静态兜底
-- `/sub` 优先进入 Worker
+- 静态资源目录：`web/dist`
+- `single-page-application` 回退，支持前端路由直接访问和刷新
+- `/sub` 优先进入 Worker，包括浏览器直接打开，避免被 SPA 回退接管
+- `[build]` 自动执行前端构建，仅监听前端源码、入口和构建配置，避免输出目录触发循环
 - 默认不绑定自定义域名
 
 ## 测试
@@ -204,6 +248,10 @@ npm run check
 - 重名处理
 - 全局与单源 `exclude`
 - 额外 `subs` 合并
+- 前端查询参数预填、URL 编码、`subs` 替换／清除与输入校验
+- 表单键盘提交、复制成功／失败、路由导航与 `.html` 地址的应用内 404
+
+Vitest 将后端测试运行在 Node 环境，将 `web/src` 下的测试运行在 jsdom 环境；前端交互使用 React Testing Library 验证。`npm run check` 检查后端、前端与构建配置的类型。
 
 ## 相关文档
 

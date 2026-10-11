@@ -2,11 +2,15 @@ name = "clash-meta-subgen"
 main = "src/index.ts"
 compatibility_date = "2026-03-20"
 
+[build]
+command = "npm run build"
+watch_dir = ["web/src", "web/public", "web/index.html", "web/vite.config.ts"]
+
 [vars]
 # 默认情况下缓存生成的订阅5分钟。
 RESULT_CACHE_TTL_SECONDS = "300"
 
 [assets]
-directory = "./public"
-not_found_handling = "404-page"
+directory = "./web/dist"
+not_found_handling = "single-page-application"
 run_worker_first = ["/sub"]

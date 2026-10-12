@@ -154,39 +154,6 @@ p {
   line-height: 1.8;
   color: var(--muted);
 }
-.page-nav {
-  display: inline-flex;
-  padding: 5px;
-  gap: 4px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: #edf0f7;
-  margin-bottom: 22px;
-}
-.page-nav a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 22px;
-  border-radius: 7px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--muted);
-}
-.page-nav a.active {
-  color: var(--accent);
-  background: white;
-  box-shadow: 0 1px 4px #25335b12;
-}
-.page-nav a:hover:not(.active) {
-  color: #253555;
-  background: #ffffff70;
-}
-.page-nav svg {
-  width: 16px;
-  height: 16px;
-}
 .workspace {
   display: grid;
   grid-template-columns: 1.1fr 1fr;
@@ -237,6 +204,32 @@ form {
   display: flex;
   flex-direction: column;
   gap: 23px;
+}
+.import-form {
+  gap: 0;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.import-controls {
+  display: flex;
+  gap: 10px;
+}
+.import-controls input {
+  min-width: 0;
+  flex: 1;
+}
+.import-controls .button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.import-feedback {
+  color: #267d68;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.import-feedback:not(:empty) {
+  margin-top: 8px;
 }
 .field-heading {
   display: flex;
@@ -379,13 +372,6 @@ textarea:focus {
 .generate-button {
   padding-left: 18px;
   padding-right: 18px;
-}
-.form-note {
-  font-size: 11px;
-  line-height: 1.8;
-  color: var(--muted);
-  padding-left: 12px;
-  border-left: 2px solid #ccd7fb;
 }
 .result-panel {
   display: flex;
@@ -720,12 +706,11 @@ textarea:focus {
     font-size: 25px;
     letter-spacing: -0.7px;
   }
-  .page-nav {
-    display: flex;
+  .import-controls {
+    flex-direction: column;
   }
-  .page-nav a {
-    flex: 1;
-    padding: 10px 14px;
+  .import-controls input {
+    flex: auto;
   }
   .form-panel,
   .result-panel {

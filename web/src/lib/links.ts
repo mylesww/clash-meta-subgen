@@ -2,10 +2,6 @@ export interface SubscriptionValues {
   config: string;
   extra: string;
   token: string;
-}
-
-export interface AppendValues {
-  baseLink: string;
   subs: string;
 }
 
@@ -20,13 +16,6 @@ export function readSubscriptionValues(search: string): SubscriptionValues {
     config: params.get("config") ?? "",
     extra: params.get("extra") ?? "",
     token: params.get("token") ?? "",
-  };
-}
-
-export function readAppendValues(search: string): AppendValues {
-  const params = new URLSearchParams(search);
-  return {
-    baseLink: params.get("baseLink") ?? "",
     subs: params.getAll("subs").join("\n"),
   };
 }
@@ -48,6 +37,26 @@ function urlError(value: string, allowHttp = false): string | undefined {
   }
 }
 
+export function parseSubscriptionUrl(
+  value: string,
+): { ok: true; values: SubscriptionValues } | { ok: false; error: string } {
+  const error = urlError(value, true);
+  if (error) return { ok: false, error };
+
+  const url = new URL(value.trim());
+  const missing = ["config", "extra", "token"].filter(
+    (parameter) => !url.searchParams.has(parameter),
+  );
+  if (missing.length) {
+    return {
+      ok: false,
+      error: `链接缺少必要参数：${missing.join("、")}`,
+    };
+  }
+
+  return { ok: true, values: readSubscriptionValues(url.search) };
+}
+
 export function createSubscriptionUrl(
   origin: string,
   values: SubscriptionValues,
@@ -58,22 +67,6 @@ export function createSubscriptionUrl(
   if (configError) errors.config = configError;
   if (extraError) errors.extra = extraError;
   if (!values.token.trim()) errors.token = "请填写访问令牌";
-  if (Object.keys(errors).length) return { ok: false, errors };
-
-  const url = new URL("/sub", origin);
-  url.searchParams.set("config", values.config.trim());
-  url.searchParams.set("extra", values.extra.trim());
-  // Tokens are opaque: preserve spaces and special characters exactly.
-  url.searchParams.set("token", values.token);
-  return { ok: true, url: url.toString() };
-}
-
-export function replaceSubscriptions(
-  values: AppendValues,
-): LinkResult<AppendValues> {
-  const errors: FieldErrors<AppendValues> = {};
-  const baseError = urlError(values.baseLink, true);
-  if (baseError) errors.baseLink = baseError;
 
   const subscriptions: string[] = [];
   for (const [index, line] of values.subs.split(/\r?\n/).entries()) {
@@ -86,8 +79,11 @@ export function replaceSubscriptions(
 
   if (Object.keys(errors).length) return { ok: false, errors };
 
-  const url = new URL(values.baseLink.trim());
-  url.searchParams.delete("subs");
+  const url = new URL("/sub", origin);
+  url.searchParams.set("config", values.config.trim());
+  url.searchParams.set("extra", values.extra.trim());
+  // Tokens are opaque: preserve spaces and special characters exactly.
+  url.searchParams.set("token", values.token);
   for (const subscription of subscriptions)
     url.searchParams.append("subs", subscription);
   return { ok: true, url: url.toString() };

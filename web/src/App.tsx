@@ -1,7 +1,6 @@
 import { useEffect } from "react";
-import { Link, NavLink, Route, Routes, useLocation, useMatch } from "react-router";
+import { Link, Route, Routes, useLocation, useMatch } from "react-router";
 import { Icon } from "./components/Icon";
-import { AppendPage } from "./pages/AppendPage";
 import { SubscriptionPage } from "./pages/SubscriptionPage";
 
 export function App() {
@@ -10,8 +9,8 @@ export function App() {
   const knownPage = Boolean(useMatch("/")) || append;
 
   useEffect(() => {
-    document.title = `Clash Meta · ${knownPage ? (append ? "额外订阅" : "订阅生成") : "页面不存在"}`;
-  }, [append, knownPage]);
+    document.title = `Clash Meta · ${knownPage ? "订阅生成" : "页面不存在"}`;
+  }, [knownPage]);
 
   return (
     <div className="app-shell">
@@ -39,36 +38,18 @@ export function App() {
       </header>
       <main id="main" className="main-content" tabIndex={-1}>
         {knownPage && (
-          <>
-            <div className="page-intro">
-              <div className="eyebrow">
-                <span className="eyebrow-line" />
-                CLASH META / MIHOMO
-              </div>
-              <h1>
-                {append ? "更多节点，一起连接。" : "一份链接，连接所有节点。"}
-              </h1>
-              <p>
-                {append
-                  ? "在已有订阅中加入新的节点来源，让每一份订阅各就其位。"
-                  : "将节点来源与分流配置组合，生成专属于你的 Clash Meta 订阅。"}
-              </p>
+          <div className="page-intro">
+            <div className="eyebrow">
+              <span className="eyebrow-line" />
+              CLASH META / MIHOMO
             </div>
-            <nav className="page-nav" aria-label="订阅工具">
-              <NavLink to="/" end>
-                <Icon name="link" />
-                生成订阅
-              </NavLink>
-              <NavLink to="/append-subs">
-                <Icon name="plus" />
-                额外订阅
-              </NavLink>
-            </nav>
-          </>
+            <h1>一份链接，连接所有节点。</h1>
+            <p>将节点来源与分流配置组合，生成专属于你的 Clash Meta 订阅。</p>
+          </div>
         )}
         <Routes location={location} key={location.pathname + location.search}>
           <Route path="/" element={<SubscriptionPage />} />
-          <Route path="/append-subs" element={<AppendPage />} />
+          <Route path="/append-subs" element={<SubscriptionPage legacy />} />
           <Route
             path="*"
             element={

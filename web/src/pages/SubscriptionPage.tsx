@@ -1,26 +1,71 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useLocation } from "react-router";
 import { Field } from "../components/Field";
 import { Icon } from "../components/Icon";
 import { ResultPanel } from "../components/ResultPanel";
 import {
   createSubscriptionUrl,
+  parseSubscriptionUrl,
   readSubscriptionValues,
   type FieldErrors,
   type SubscriptionValues,
 } from "../lib/links";
 
-export function SubscriptionPage() {
+function readInitialForm(search: string, legacy: boolean) {
+  const params = new URLSearchParams(search);
+  const link = legacy ? params.get("baseLink") ?? "" : "";
+  const parsed = link ? parseSubscriptionUrl(link) : null;
+  const queryValues = readSubscriptionValues(search);
+
+  return {
+    link,
+    error: parsed && !parsed.ok ? parsed.error : undefined,
+    values: parsed?.ok
+      ? {
+          ...parsed.values,
+          subs: params.has("subs") ? queryValues.subs : parsed.values.subs,
+        }
+      : queryValues,
+  };
+}
+
+export function SubscriptionPage({ legacy = false }: { legacy?: boolean }) {
   const { search } = useLocation();
-  const [values, setValues] = useState(() => readSubscriptionValues(search));
+  const [initial] = useState(() => readInitialForm(search, legacy));
+  const [values, setValues] = useState(initial.values);
+  const [existingLink, setExistingLink] = useState(initial.link);
+  const [importError, setImportError] = useState(initial.error);
+  const [imported, setImported] = useState(false);
   const [errors, setErrors] = useState<FieldErrors<SubscriptionValues>>({});
   const [url, setUrl] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(false);
+  const configRef = useRef<HTMLInputElement>(null);
 
   function update(field: keyof SubscriptionValues, value: string) {
     setValues((previous) => ({ ...previous, [field]: value }));
     setErrors((previous) => ({ ...previous, [field]: undefined }));
     setUrl(null);
+    setImported(false);
+  }
+
+  function restore(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const result = parseSubscriptionUrl(existingLink);
+    if (!result.ok) {
+      setImportError(result.error);
+      setImported(false);
+      (
+        event.currentTarget.elements.namedItem("existingLink") as HTMLInputElement
+      )?.focus();
+      return;
+    }
+    setValues(result.values);
+    setErrors({});
+    setUrl(null);
+    setShowToken(false);
+    setImportError(undefined);
+    setImported(true);
+    configRef.current?.focus();
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -31,7 +76,8 @@ export function SubscriptionPage() {
       setUrl(null);
       const field = Object.keys(result.errors)[0];
       (
-        event.currentTarget.elements.namedItem(field) as HTMLInputElement
+        event.currentTarget.elements.namedItem(field) as
+          HTMLInputElement | HTMLTextAreaElement
       )?.focus();
       return;
     }
@@ -47,8 +93,43 @@ export function SubscriptionPage() {
           <h2 id="form-heading">配置你的订阅</h2>
         </div>
         <p className="panel-description">
-          准备好两个配置文件的链接，即可开始。
+          填写配置与可选的额外订阅，也可以从已有链接恢复。
         </p>
+        <form className="import-form" noValidate onSubmit={restore}>
+          <Field
+            id="existingLink"
+            label="已有订阅链接"
+            parameter="可选"
+            hint="粘贴之前生成的完整链接，点击解析后覆盖下方配置。"
+            error={importError}
+          >
+            <div className="import-controls">
+              <input
+                id="existingLink"
+                name="existingLink"
+                type="url"
+                placeholder="https://example.com/sub?config=…&extra=…&token=…"
+                value={existingLink}
+                onChange={(event) => {
+                  setExistingLink(event.target.value);
+                  setImportError(undefined);
+                  setImported(false);
+                }}
+                aria-invalid={Boolean(importError)}
+                aria-describedby="existingLink-hint"
+                autoCapitalize="none"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button className="button button-secondary" type="submit">
+                解析并回填
+              </button>
+            </div>
+          </Field>
+          <p className="import-feedback" role="status" aria-live="polite">
+            {imported ? "已回填配置，可继续编辑并生成订阅链接。" : ""}
+          </p>
+        </form>
         <form noValidate onSubmit={submit}>
           <Field
             id="config"
@@ -58,6 +139,7 @@ export function SubscriptionPage() {
             error={errors.config}
           >
             <input
+              ref={configRef}
               id="config"
               name="config"
               type="url"
@@ -123,6 +205,28 @@ export function SubscriptionPage() {
                 <Icon name={showToken ? "eyeOff" : "eye"} />
               </button>
             </div>
+          </Field>
+          <Field
+            id="subs"
+            label="额外订阅链接"
+            parameter="可选"
+            hint="每行一个 HTTPS 链接；留空则不添加额外订阅。"
+            error={errors.subs}
+          >
+            <textarea
+              id="subs"
+              name="subs"
+              rows={5}
+              placeholder={
+                "https://example.com/sub-a\nhttps://example.com/sub-b"
+              }
+              value={values.subs}
+              onChange={(event) => update("subs", event.target.value)}
+              aria-invalid={Boolean(errors.subs)}
+              aria-describedby="subs-hint"
+              autoCapitalize="none"
+              spellCheck={false}
+            />
           </Field>
           <button
             className="button button-primary generate-button"

@@ -70,7 +70,6 @@ describe("subscription links", () => {
       errors: {
         config: "链接须以 https:// 开头",
         extra: "请输入完整、有效的 URL",
-        token: "请填写访问令牌",
         subs: "第 3 行：链接须以 https:// 开头",
       },
     });
@@ -122,13 +121,15 @@ describe("importing generated links", () => {
     },
   );
 
-  it("fills an empty subscription list when the old link has no subs", () => {
+  it("fills empty optional fields when the old link has no token or subs", () => {
+    const params = new URLSearchParams(fields);
+    params.delete("token");
     expect(
-      parseSubscriptionUrl(`https://old.example/sub?${new URLSearchParams(fields)}`),
-    ).toEqual({ ok: true, values: { ...fields, subs: "" } });
+      parseSubscriptionUrl(`https://old.example/sub?${params}`),
+    ).toEqual({ ok: true, values: { ...fields, token: "", subs: "" } });
   });
 
-  it.each(["config", "extra", "token"])(
+  it.each(["config", "extra"])(
     "reports a missing %s parameter before importing",
     (parameter) => {
       const params = new URLSearchParams(fields);
@@ -163,7 +164,6 @@ describe("importing generated links", () => {
       errors: {
         config: "链接须以 https:// 开头",
         extra: "请输入完整、有效的 URL",
-        token: "请填写访问令牌",
         subs: "第 1 行：请输入完整、有效的 URL",
       },
     });

@@ -44,7 +44,7 @@ export function parseSubscriptionUrl(
   if (error) return { ok: false, error };
 
   const url = new URL(value.trim());
-  const missing = ["config", "extra", "token"].filter(
+  const missing = ["config", "extra"].filter(
     (parameter) => !url.searchParams.has(parameter),
   );
   if (missing.length) {
@@ -66,7 +66,6 @@ export function createSubscriptionUrl(
   const extraError = urlError(values.extra);
   if (configError) errors.config = configError;
   if (extraError) errors.extra = extraError;
-  if (!values.token.trim()) errors.token = "请填写访问令牌";
 
   const subscriptions: string[] = [];
   for (const [index, line] of values.subs.split(/\r?\n/).entries()) {
@@ -83,7 +82,7 @@ export function createSubscriptionUrl(
   url.searchParams.set("config", values.config.trim());
   url.searchParams.set("extra", values.extra.trim());
   // Tokens are opaque: preserve spaces and special characters exactly.
-  url.searchParams.set("token", values.token);
+  if (values.token.trim()) url.searchParams.set("token", values.token);
   for (const subscription of subscriptions)
     url.searchParams.append("subs", subscription);
   return { ok: true, url: url.toString() };

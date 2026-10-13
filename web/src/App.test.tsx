@@ -51,6 +51,7 @@ afterEach(() => vi.restoreAllMocks());
 describe("subscription UI", () => {
   it("generates a link from query-prefilled fields, copies it and opens it safely", async () => {
     const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     const clipboard = vi
       .spyOn(navigator.clipboard, "writeText")
       .mockResolvedValue(undefined);
@@ -64,6 +65,7 @@ describe("subscription UI", () => {
       "text",
     );
     await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
+    expect(confirm).not.toHaveBeenCalled();
 
     const output = screen.getByLabelText(
       "生成的订阅链接",
@@ -83,8 +85,10 @@ describe("subscription UI", () => {
 
   it("focuses invalid fields, supports keyboard submission and clears stale results when edited", async () => {
     const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     renderPage();
     await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
+    expect(confirm).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(screen.getByLabelText("订阅配置"));
     expect(screen.getByLabelText("订阅配置").getAttribute("aria-invalid")).toBe(
       "true",
@@ -100,6 +104,36 @@ describe("subscription UI", () => {
     expect(screen.queryByLabelText("生成的订阅链接")).toBeNull();
     await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
     expect(screen.getByText("链接须以 https:// 开头")).toBeTruthy();
+  });
+
+  it.each(["", "   "])("requires confirmation to generate without a token: %j", async (token) => {
+    const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderPage(`/?${new URLSearchParams({ ...fields, token })}`);
+    const tokenInput = screen.getByLabelText("访问令牌") as HTMLInputElement;
+    expect(tokenInput.required).toBe(false);
+
+    await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("未填写访问令牌（token）"));
+    expect(screen.queryByLabelText("生成的订阅链接")).toBeNull();
+    expect(tokenInput.getAttribute("aria-invalid")).toBe("false");
+
+    confirm.mockReturnValue(true);
+    tokenInput.focus();
+    await user.keyboard("{Enter}");
+    expect(confirm).toHaveBeenCalledTimes(2);
+    const output = inputValue("生成的订阅链接");
+    expect(Object.fromEntries(new URL(output).searchParams)).toEqual({
+      config: fields.config,
+      extra: fields.extra,
+    });
+
+    fireEvent.change(screen.getByLabelText("已有订阅链接"), { target: { value: output } });
+    await user.click(screen.getByRole("button", { name: "解析并回填" }));
+    expect(inputValue("订阅配置")).toBe(fields.config);
+    expect(inputValue("基础配置")).toBe(fields.extra);
+    expect(inputValue("访问令牌")).toBe("");
+    expect(screen.getByLabelText("已有订阅链接").getAttribute("aria-invalid")).toBe("false");
   });
 
   it("selects the complete link for manual copying if the clipboard rejects access", async () => {
@@ -213,7 +247,7 @@ describe("importing previous links", () => {
     expect(new URL(inputValue("生成的订阅链接")).searchParams.has("subs")).toBe(false);
   });
 
-  it.each(["invalid", "https://old.example/sub?config=c&extra=e"])(
+  it.each(["invalid", "https://old.example/sub?config=c"])(
     "keeps the current form and result when importing fails: %s",
     async (link) => {
       const user = userEvent.setup();

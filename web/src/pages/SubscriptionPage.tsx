@@ -82,6 +82,14 @@ export function SubscriptionPage({ legacy = false }: { legacy?: boolean }) {
       return;
     }
     setErrors({});
+    if (
+      !values.token.trim() &&
+      !window.confirm(
+        "未填写访问令牌（token），访问订阅时可能无法通过鉴权。是否继续生成？",
+      )
+    ) {
+      return;
+    }
     setUrl(result.url);
   }
 
@@ -177,8 +185,8 @@ export function SubscriptionPage({ legacy = false }: { legacy?: boolean }) {
           <Field
             id="token"
             label="访问令牌"
-            parameter="token"
-            hint="填写部署服务时设置的 ACCESS_TOKEN。"
+            parameter="token · 可选"
+            hint="填写部署服务时设置的 ACCESS_TOKEN；留空时需确认后继续生成。"
             error={errors.token}
           >
             <div className="input-with-action">
@@ -186,8 +194,7 @@ export function SubscriptionPage({ legacy = false }: { legacy?: boolean }) {
                 id="token"
                 name="token"
                 type={showToken ? "text" : "password"}
-                required
-                placeholder="输入你的访问令牌"
+                placeholder="可选，输入你的访问令牌"
                 value={values.token}
                 onChange={(event) => update("token", event.target.value)}
                 aria-invalid={Boolean(errors.token)}

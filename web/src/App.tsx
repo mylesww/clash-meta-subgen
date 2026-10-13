@@ -5,8 +5,7 @@ import { SubscriptionPage } from "./pages/SubscriptionPage";
 
 export function App() {
   const location = useLocation();
-  const append = Boolean(useMatch("/append-subs"));
-  const knownPage = Boolean(useMatch("/")) || append;
+  const knownPage = Boolean(useMatch("/"));
 
   useEffect(() => {
     document.title = `Clash Meta · ${knownPage ? "订阅生成" : "页面不存在"}`;
@@ -49,7 +48,6 @@ export function App() {
         )}
         <Routes location={location} key={location.pathname + location.search}>
           <Route path="/" element={<SubscriptionPage />} />
-          <Route path="/append-subs" element={<SubscriptionPage />} />
           <Route
             path="*"
             element={

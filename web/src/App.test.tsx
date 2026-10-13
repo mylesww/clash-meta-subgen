@@ -199,7 +199,7 @@ describe("unified subscription form", () => {
 });
 
 describe("importing previous links", () => {
-  it.each(["/", "/append-subs"])("restores on request at %s, updates the URL and regenerates edited fields", async (path) => {
+  it("restores on request, updates the URL and regenerates edited fields", async () => {
     const user = userEvent.setup();
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const params = new URLSearchParams({
@@ -207,7 +207,7 @@ describe("importing previous links", () => {
       config: "https://current.example/config",
       source: "a+b&中文%2F",
     });
-    const router = renderPage(`${path}?${params}#main`);
+    const router = renderPage(`/?${params}#main`);
     const previousLocation = router.state.location;
     await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
     const previousOutput = inputValue("生成的订阅链接");
@@ -232,7 +232,7 @@ describe("importing previous links", () => {
     expect(screen.getByRole("status").textContent).toBe("已回填配置，可继续编辑并生成订阅链接。");
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(router.state.historyAction).toBe("REPLACE");
-    expect(router.state.location.pathname).toBe(path);
+    expect(router.state.location.pathname).toBe("/");
     expect(router.state.location.hash).toBe("#main");
     expect(Object.fromEntries(new URLSearchParams(router.state.location.search))).toEqual({
       source: params.get("source"),
@@ -360,25 +360,13 @@ describe("importing previous links", () => {
   });
 });
 
-describe("legacy entry and routing", () => {
-  it.each(["/append-subs", "/append-subs/", "/APPEND-SUBS"])(
-    "renders the unified form at %s",
-    (path) => {
-      renderPage(path);
-      expect(screen.getByRole("heading", { name: "一份链接，连接所有节点。" })).toBeTruthy();
-      expect(screen.getByLabelText("已有订阅链接")).toBeTruthy();
-      expect(screen.getByLabelText("订阅配置")).toBeTruthy();
-      expect(screen.getByLabelText("额外订阅链接")).toBeTruthy();
-      expect(screen.getAllByRole("button", { name: /生成.*链接/ })).toHaveLength(1);
-      expect(document.title).toBe("Clash Meta · 订阅生成");
-    },
-  );
-
-  it.each(["/", "/append-subs"])("prefills baseLink at %s", async (path) => {
+describe("routing", () => {
+  it("prefills baseLink on the home page", async () => {
     const user = userEvent.setup();
     const baseLink = `https://old.example/sub?${queryWithSubscriptions()}`;
     const params = new URLSearchParams({ baseLink });
-    renderPage(`${path}?${params}`);
+    renderPage(`/?${params}`);
+    expect(document.title).toBe("Clash Meta · 订阅生成");
     expect(inputValue("已有订阅链接")).toBe(baseLink);
     expect(inputValue("订阅配置")).toBe(fields.config);
     expect(inputValue("基础配置")).toBe(fields.extra);
@@ -390,9 +378,9 @@ describe("legacy entry and routing", () => {
     expect(result.searchParams.getAll("subs")).toEqual(subscriptions);
   });
 
-  it.each(["/", "/append-subs"])("reports an invalid baseLink at %s and allows manual configuration", async (path) => {
+  it("reports an invalid baseLink and allows manual configuration", async () => {
     const user = userEvent.setup();
-    renderPage(`${path}?baseLink=invalid`);
+    renderPage("/?baseLink=invalid");
     expect(screen.getByText("请输入完整、有效的 URL")).toBeTruthy();
     expect(inputValue("订阅配置")).toBe("");
     expect(inputValue("额外订阅链接")).toBe("");
@@ -416,12 +404,14 @@ describe("legacy entry and routing", () => {
     await waitFor(() => expect(inputValue("访问令牌")).toBe("changed"));
   });
 
-  it.each(["/missing", "/append-subs.html"])(
+  it.each(["/missing", "/append-subs", "/append-subs.html"])(
     "shows the app not-found page for %s",
     async (path) => {
       const user = userEvent.setup();
       renderPage(path);
       expect(screen.getByRole("heading", { name: "页面不存在" })).toBeTruthy();
+      expect(screen.queryByLabelText("订阅配置")).toBeNull();
+      expect(document.title).toBe("Clash Meta · 页面不存在");
       await user.click(screen.getByRole("link", { name: "返回首页" }));
       expect(screen.getByLabelText("订阅配置")).toBeTruthy();
     },

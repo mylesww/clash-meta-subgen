@@ -23,10 +23,10 @@ function queryWithSubscriptions() {
 }
 
 describe("subscription links", () => {
-  it("prefills nested queries, unicode, exact tokens and repeated subscriptions", () => {
-    const params = queryWithSubscriptions();
+  it("prefills nested queries, unicode and exact tokens", () => {
+    const params = new URLSearchParams(fields);
     const values = readSubscriptionValues(`?${params}`);
-    expect(values).toEqual({ ...fields, subs: subscriptions.join("\n") });
+    expect(values).toEqual({ ...fields, subs: "" });
     const result = createSubscriptionUrl("https://worker.example", values);
     if (!result.ok) throw new Error("Expected a valid link");
     expect(result.url).toBe(`https://worker.example/sub?${params}`);

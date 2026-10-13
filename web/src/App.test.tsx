@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -20,6 +20,12 @@ function queryWithSubscriptions() {
   const params = new URLSearchParams(fields);
   for (const subscription of subscriptions) params.append("subs", subscription);
   return params;
+}
+
+function queryWithBaseLink() {
+  return new URLSearchParams({
+    baseLink: `https://old.example/sub?${queryWithSubscriptions()}`,
+  });
 }
 
 function inputValue(label: string) {
@@ -158,9 +164,12 @@ describe("subscription UI", () => {
 });
 
 describe("unified subscription form", () => {
-  it("includes query-prefilled subscriptions in the single generate action and allows clearing them", async () => {
+  it("includes subscriptions in the single generate action and allows clearing them", async () => {
     const user = userEvent.setup();
-    renderPage(`/?${queryWithSubscriptions()}`);
+    renderPage(`/?${new URLSearchParams(fields)}`);
+    fireEvent.change(screen.getByLabelText("额外订阅链接"), {
+      target: { value: subscriptions.join("\n") },
+    });
     expect(screen.getAllByRole("button", { name: /生成.*链接/ })).toHaveLength(1);
     expect(screen.queryByRole("navigation", { name: "订阅工具" })).toBeNull();
     expect(inputValue("额外订阅链接")).toBe(subscriptions.join("\n"));
@@ -190,10 +199,16 @@ describe("unified subscription form", () => {
 });
 
 describe("importing previous links", () => {
-  it("only restores on request, clears stale results and regenerates edited fields with subscriptions", async () => {
+  it.each(["/", "/append-subs"])("restores on request at %s, updates the URL and regenerates edited fields", async (path) => {
     const user = userEvent.setup();
     const fetchSpy = vi.spyOn(globalThis, "fetch");
-    renderPage(`/?${new URLSearchParams({ ...fields, config: "https://current.example/config" })}`);
+    const params = new URLSearchParams({
+      ...fields,
+      config: "https://current.example/config",
+      source: "a+b&中文%2F",
+    });
+    const router = renderPage(`${path}?${params}#main`);
+    const previousLocation = router.state.location;
     await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
     const previousOutput = inputValue("生成的订阅链接");
     await user.click(screen.getByRole("button", { name: "显示访问令牌" }));
@@ -204,6 +219,7 @@ describe("importing previous links", () => {
     expect(inputValue("订阅配置")).toBe("https://current.example/config");
     expect(inputValue("额外订阅链接")).toBe("");
     expect(inputValue("生成的订阅链接")).toBe(previousOutput);
+    expect(router.state.location).toBe(previousLocation);
 
     await user.click(screen.getByRole("button", { name: "解析并回填" }));
     expect(inputValue("订阅配置")).toBe(fields.config);
@@ -215,6 +231,14 @@ describe("importing previous links", () => {
     expect(screen.queryByLabelText("生成的订阅链接")).toBeNull();
     expect(screen.getByRole("status").textContent).toBe("已回填配置，可继续编辑并生成订阅链接。");
     expect(fetchSpy).not.toHaveBeenCalled();
+    expect(router.state.historyAction).toBe("REPLACE");
+    expect(router.state.location.pathname).toBe(path);
+    expect(router.state.location.hash).toBe("#main");
+    expect(Object.fromEntries(new URLSearchParams(router.state.location.search))).toEqual({
+      source: params.get("source"),
+      baseLink: oldLink,
+    });
+    const importedLocation = router.state.location;
 
     fireEvent.change(screen.getByLabelText("订阅配置"), {
       target: { value: "https://updated.example/config?key=a+b&v=2" },
@@ -225,11 +249,15 @@ describe("importing previous links", () => {
     expect(result.searchParams.get("config")).toBe("https://updated.example/config?key=a+b&v=2");
     expect(result.searchParams.get("token")).toBe(fields.token);
     expect(result.searchParams.getAll("subs")).toEqual(subscriptions);
+    expect(router.state.location).toBe(importedLocation);
   });
 
   it("imports with Enter, clears validation errors and replaces missing subs with an empty field", async () => {
     const user = userEvent.setup();
-    renderPage("/?subs=invalid");
+    const router = renderPage();
+    fireEvent.change(screen.getByLabelText("额外订阅链接"), {
+      target: { value: "invalid" },
+    });
     await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
     expect(screen.getByLabelText("订阅配置").getAttribute("aria-invalid")).toBe("true");
     expect(screen.getByLabelText("额外订阅链接").getAttribute("aria-invalid")).toBe("true");
@@ -243,15 +271,19 @@ describe("importing previous links", () => {
       expect(screen.getByLabelText(label).getAttribute("aria-invalid")).toBe("false");
     }
     expect(screen.queryByLabelText("生成的订阅链接")).toBeNull();
+    expect(new URLSearchParams(router.state.location.search).get("baseLink")).toBe(
+      inputValue("已有订阅链接"),
+    );
     await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
     expect(new URL(inputValue("生成的订阅链接")).searchParams.has("subs")).toBe(false);
   });
 
-  it.each(["invalid", "https://old.example/sub?config=c"])(
-    "keeps the current form and result when importing fails: %s",
+  it.each(["", "invalid", "https://old.example/sub?config=c"])(
+    "keeps the current URL, form and result when importing fails: %s",
     async (link) => {
       const user = userEvent.setup();
-      renderPage(`/?${queryWithSubscriptions()}`);
+      const router = renderPage(`/?${queryWithBaseLink()}`);
+      const previousLocation = router.state.location;
       await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
       const output = inputValue("生成的订阅链接");
       fireEvent.change(screen.getByLabelText("已有订阅链接"), { target: { value: link } });
@@ -263,10 +295,69 @@ describe("importing previous links", () => {
       expect(inputValue("访问令牌")).toBe(fields.token);
       expect(inputValue("额外订阅链接")).toBe(subscriptions.join("\n"));
       expect(inputValue("生成的订阅链接")).toBe(output);
+      expect(router.state.location).toBe(previousLocation);
+      if (!link) {
+        await user.type(screen.getByLabelText("已有订阅链接"), "invalid");
+      }
       await user.clear(screen.getByLabelText("已有订阅链接"));
       expect(screen.getByLabelText("已有订阅链接").getAttribute("aria-invalid")).toBe("false");
     },
   );
+
+  it("restores the same URL repeatedly after edits, errors and generation", async () => {
+    const user = userEvent.setup();
+    const router = renderPage(`/?${queryWithBaseLink()}`);
+    const previousLocation = router.state.location;
+    fireEvent.change(screen.getByLabelText("订阅配置"), {
+      target: { value: "invalid" },
+    });
+    fireEvent.change(screen.getByLabelText("额外订阅链接"), {
+      target: { value: "invalid" },
+    });
+    await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
+    expect(screen.getByLabelText("订阅配置").getAttribute("aria-invalid")).toBe("true");
+    await user.click(screen.getByRole("button", { name: "显示访问令牌" }));
+    await user.click(screen.getByRole("button", { name: "解析并回填" }));
+    expect(inputValue("订阅配置")).toBe(fields.config);
+    expect(inputValue("额外订阅链接")).toBe(subscriptions.join("\n"));
+    expect((screen.getByLabelText("访问令牌") as HTMLInputElement).type).toBe("password");
+    for (const label of ["订阅配置", "基础配置", "访问令牌", "额外订阅链接"]) {
+      expect(screen.getByLabelText(label).getAttribute("aria-invalid")).toBe("false");
+    }
+    expect(screen.getByRole("status").textContent).toBe("已回填配置，可继续编辑并生成订阅链接。");
+    expect(document.activeElement).toBe(screen.getByLabelText("订阅配置"));
+    await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
+    expect(screen.getByLabelText("生成的订阅链接")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "解析并回填" }));
+    expect(screen.queryByLabelText("生成的订阅链接")).toBeNull();
+    expect(document.activeElement).toBe(screen.getByLabelText("订阅配置"));
+    expect(router.state.location).toBe(previousLocation);
+  });
+
+  it("replaces the current history entry and restores the saved URL on a fresh mount", async () => {
+    const user = userEvent.setup();
+    const router = renderPage("/missing");
+    await act(() => router.navigate("/"));
+    const baseLink = `https://old.example/custom/sub?${queryWithSubscriptions()}#fragment`;
+    fireEvent.change(screen.getByLabelText("已有订阅链接"), {
+      target: { value: baseLink },
+    });
+    await user.click(screen.getByRole("button", { name: "解析并回填" }));
+    const { pathname, search, hash } = router.state.location;
+    await act(() => router.navigate(-1));
+    expect(router.state.location.pathname).toBe("/missing");
+    await act(() => router.navigate(1));
+    expect(inputValue("已有订阅链接")).toBe(baseLink);
+    expect(inputValue("访问令牌")).toBe(fields.token);
+    cleanup();
+    renderPage(pathname + search + hash);
+    expect(inputValue("已有订阅链接")).toBe(baseLink);
+    expect(inputValue("订阅配置")).toBe(fields.config);
+    expect(inputValue("基础配置")).toBe(fields.extra);
+    expect(inputValue("访问令牌")).toBe(fields.token);
+    expect(inputValue("额外订阅链接")).toBe(subscriptions.join("\n"));
+    expect(screen.getByRole("status").textContent).toBe("");
+  });
 });
 
 describe("legacy entry and routing", () => {
@@ -283,33 +374,28 @@ describe("legacy entry and routing", () => {
     },
   );
 
-  it.each([
-    { overrides: [], expected: subscriptions },
-    { overrides: ["https://new.example/a", "https://new.example/b"], expected: ["https://new.example/a", "https://new.example/b"] },
-    { overrides: [""], expected: [] },
-  ])("prefills baseLink and applies explicit subscription overrides: $overrides", async ({ overrides, expected }) => {
+  it.each(["/", "/append-subs"])("prefills baseLink at %s", async (path) => {
     const user = userEvent.setup();
     const baseLink = `https://old.example/sub?${queryWithSubscriptions()}`;
     const params = new URLSearchParams({ baseLink });
-    for (const subscription of overrides) params.append("subs", subscription);
-    renderPage(`/append-subs?${params}`);
+    renderPage(`${path}?${params}`);
     expect(inputValue("已有订阅链接")).toBe(baseLink);
     expect(inputValue("订阅配置")).toBe(fields.config);
     expect(inputValue("基础配置")).toBe(fields.extra);
     expect(inputValue("访问令牌")).toBe(fields.token);
-    expect(inputValue("额外订阅链接")).toBe(expected.join("\n"));
+    expect(inputValue("额外订阅链接")).toBe(subscriptions.join("\n"));
     await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
     const result = new URL(inputValue("生成的订阅链接"));
     expect(result.origin).toBe(window.location.origin);
-    expect(result.searchParams.getAll("subs")).toEqual(expected);
+    expect(result.searchParams.getAll("subs")).toEqual(subscriptions);
   });
 
-  it("reports an invalid legacy baseLink and allows manual configuration", async () => {
+  it.each(["/", "/append-subs"])("reports an invalid baseLink at %s and allows manual configuration", async (path) => {
     const user = userEvent.setup();
-    renderPage("/append-subs?baseLink=invalid&subs=https%3A%2F%2Fupstream.example%2Fa");
+    renderPage(`${path}?baseLink=invalid`);
     expect(screen.getByText("请输入完整、有效的 URL")).toBeTruthy();
     expect(inputValue("订阅配置")).toBe("");
-    expect(inputValue("额外订阅链接")).toBe("https://upstream.example/a");
+    expect(inputValue("额外订阅链接")).toBe("");
     fillSubscription();
     await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
     expect(screen.getByLabelText("生成的订阅链接")).toBeTruthy();
@@ -317,7 +403,7 @@ describe("legacy entry and routing", () => {
 
   it("restores query prefills on query changes, back and forward", async () => {
     const user = userEvent.setup();
-    const router = renderPage(`/?${queryWithSubscriptions()}`);
+    const router = renderPage(`/?${queryWithBaseLink()}`);
     await user.click(screen.getByRole("button", { name: "生成订阅链接" }));
     await act(() => router.navigate(`/?${new URLSearchParams({ ...fields, token: "changed" })}`));
     expect(inputValue("访问令牌")).toBe("changed");

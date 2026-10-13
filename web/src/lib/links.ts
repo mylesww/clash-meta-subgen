@@ -16,7 +16,7 @@ export function readSubscriptionValues(search: string): SubscriptionValues {
     config: params.get("config") ?? "",
     extra: params.get("extra") ?? "",
     token: params.get("token") ?? "",
-    subs: params.getAll("subs").join("\n"),
+    subs: "",
   };
 }
 
@@ -54,7 +54,13 @@ export function parseSubscriptionUrl(
     };
   }
 
-  return { ok: true, values: readSubscriptionValues(url.search) };
+  return {
+    ok: true,
+    values: {
+      ...readSubscriptionValues(url.search),
+      subs: url.searchParams.getAll("subs").join("\n"),
+    },
+  };
 }
 
 export function createSubscriptionUrl(

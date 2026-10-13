@@ -1,5 +1,5 @@
-import { useRef, useState, type FormEvent } from "react";
-import { useLocation } from "react-router";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { Field } from "../components/Field";
 import { Icon } from "../components/Icon";
 import { ResultPanel } from "../components/ResultPanel";
@@ -11,35 +11,36 @@ import {
   type SubscriptionValues,
 } from "../lib/links";
 
-function readInitialForm(search: string, legacy: boolean) {
+function readInitialForm(search: string) {
   const params = new URLSearchParams(search);
-  const link = legacy ? params.get("baseLink") ?? "" : "";
-  const parsed = link ? parseSubscriptionUrl(link) : null;
-  const queryValues = readSubscriptionValues(search);
+  const link = params.get("baseLink") ?? "";
+  const parsed = params.has("baseLink") ? parseSubscriptionUrl(link) : null;
 
   return {
     link,
     error: parsed && !parsed.ok ? parsed.error : undefined,
-    values: parsed?.ok
-      ? {
-          ...parsed.values,
-          subs: params.has("subs") ? queryValues.subs : parsed.values.subs,
-        }
-      : queryValues,
+    values: parsed?.ok ? parsed.values : readSubscriptionValues(search),
   };
 }
 
-export function SubscriptionPage({ legacy = false }: { legacy?: boolean }) {
-  const { search } = useLocation();
-  const [initial] = useState(() => readInitialForm(search, legacy));
+export function SubscriptionPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [initial] = useState(() => readInitialForm(location.search));
   const [values, setValues] = useState(initial.values);
   const [existingLink, setExistingLink] = useState(initial.link);
   const [importError, setImportError] = useState(initial.error);
-  const [imported, setImported] = useState(false);
+  const [imported, setImported] = useState(
+    () => location.state?.subscriptionImported === true && !initial.error,
+  );
   const [errors, setErrors] = useState<FieldErrors<SubscriptionValues>>({});
   const [url, setUrl] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(false);
   const configRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (imported) configRef.current?.focus();
+  }, [imported]);
 
   function update(field: keyof SubscriptionValues, value: string) {
     setValues((previous) => ({ ...previous, [field]: value }));
@@ -50,8 +51,13 @@ export function SubscriptionPage({ legacy = false }: { legacy?: boolean }) {
 
   function restore(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const result = parseSubscriptionUrl(existingLink);
-    if (!result.ok) {
+    const params = new URLSearchParams(location.search);
+    for (const parameter of ["config", "extra", "token", "subs"])
+      params.delete(parameter);
+    params.set("baseLink", existingLink.trim());
+    const search = `?${params}`;
+    const result = readInitialForm(search);
+    if (result.error) {
       setImportError(result.error);
       setImported(false);
       (
@@ -59,7 +65,15 @@ export function SubscriptionPage({ legacy = false }: { legacy?: boolean }) {
       )?.focus();
       return;
     }
+    if (search !== location.search) {
+      void navigate(
+        { pathname: location.pathname, search, hash: location.hash },
+        { replace: true, state: { subscriptionImported: true } },
+      );
+      return;
+    }
     setValues(result.values);
+    setExistingLink(result.link);
     setErrors({});
     setUrl(null);
     setShowToken(false);

@@ -49,7 +49,7 @@ export function App() {
         )}
         <Routes location={location} key={location.pathname + location.search}>
           <Route path="/" element={<SubscriptionPage />} />
-          <Route path="/append-subs" element={<SubscriptionPage legacy />} />
+          <Route path="/append-subs" element={<SubscriptionPage />} />
           <Route
             path="*"
             element={
